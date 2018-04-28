@@ -56,8 +56,17 @@ typedef enum
    LPO4,
    LPO4Copy,
    RPO,
+   WPO,
    EMPTY
 }TermOrdering;
+
+// TODO: yan comment
+typedef enum
+{
+   NoAlgebra = 0,
+   Sum,
+   Max
+}WeightAlgebra;
 
 
 typedef struct ocb_cell
@@ -87,6 +96,8 @@ typedef struct ocb_cell
    long            max_var;
    long            vb_size;
    int             *vb;
+   WeightAlgebra   algebra; // TODO: yan comment
+   double          **algebra_coefs; // TODO: yan comment
 }OCBCell, *OCB_p;
 
 #define OCB_FUN_DEFAULT_WEIGHT 1
@@ -106,6 +117,7 @@ typedef struct ocb_cell
 /* Symbolic representation of ordering relations */
 
 extern char*  TONames[];
+extern char*  TOAlgebras[];
 
 OCB_p         OCBAlloc(TermOrdering type, bool prec_by_weight, Sig_p sig);
 void          OCBFree(OCB_p junk);
@@ -133,6 +145,7 @@ bool          OCBPrecedenceBacktrack(OCB_p ocb, PStackPointer state);
 
 #define OCBFunWeightPos(ocb, f) &((ocb)->weights[(f)])
 #define OCBFunComparePos(ocb, f1, f2) (&((ocb)->precedence[((f2)-1)*(ocb)->sig_size+((f1)-1)]))
+#define OCBAlgebraCoefPos(ocb, f, i) &((ocb)->algebra_coefs[(f)-1][(i)])
 
 
 FunCode OCBFindMinConst(OCB_p ocb);
@@ -153,6 +166,7 @@ static __inline__ CompareResult OCBFunCompare(OCB_p ocb, FunCode f1, FunCode f2)
 CompareResult OCBFunCompareMatrix(OCB_p ocb, FunCode f1, FunCode f2);
 FunCode       OCBTermMaxFunCode(OCB_p ocb, Term_p term);
 
+WeightAlgebra TOTranslateAlgebra(char* name);
 
 /*---------------------------------------------------------------------*/
 /*                        Inline Functions                             */

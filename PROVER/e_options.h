@@ -135,6 +135,9 @@ typedef enum
    OPT_TO_PRECEDENCE,
    OPT_TO_LPO_RECLIMIT,
    OPT_TO_RESTRICT_LIT_CMPS,
+   OPT_TO_ALGEBRA, // TODO: yan
+   OPT_TO_COEFS, // TODO: yan
+   OPT_TO_COEFGEN, // TODO: yan
    OPT_TPTP_SOS,
    OPT_ER_DESTRUCTIVE,
    OPT_ER_STRONG_DESTRUCTIVE,
@@ -1023,6 +1026,26 @@ OptCell opts[] =
     " to make Set-of-Support-strategies complete for the non-equational"
     " case (It still is incomplete for the equational case, but pretty"
     " useless anyways)."},
+
+   // yan
+   {OPT_TO_ALGEBRA,
+    'a', "algebra",
+    ReqArg, NULL,
+    "Weight algebra (see eprover -a none for possible values)"},
+   
+   {OPT_TO_COEFGEN,
+    'A', "algebra-coefs-generation",
+    ReqArg, NULL,
+    "Weight algebra coeficients generation method "
+    " (see eprover -A none for possible values)."},
+
+   {OPT_TO_COEFS,
+    '\0', "algebra-coefs",
+    ReqArg, NULL,
+    "User defined weight algebra coeficients overriding generation"
+    " methods.  Argument format is symbol:c1:c2:...:cn where ci's"
+    " are floats and there must be exactly one coeficient for every"
+    " argument (that is, n equals the arity of symbol)."},
 
    {OPT_TPTP_SOS,
     '\0', "sos-uses-input-types",

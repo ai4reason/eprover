@@ -1,12 +1,12 @@
 /*-----------------------------------------------------------------------
 
-File  : cto_orderings.h
+File  : cto_wbo.h
 
-Author: Stephan Schulz
+Author: Jan Jakubuv
 
 Contents
 
-  Generic Interface to the term comparison routines.
+  Definitions for implementing WPO.
 
   Copyright 1998, 1999 by the author.
   This code is released under the GNU General Public Licence and
@@ -16,50 +16,32 @@ Contents
 
 Changes
 
-<1> Mon May  4 23:24:41 MET DST 1998
-    New
-
 -----------------------------------------------------------------------*/
 
-#ifndef CTO_ORDERINGS
+#ifndef CTO_WPO
 
-#define CTO_ORDERINGS
+#define CTO_WPO
 
-#include <cto_lpo.h>
-#include <cto_lpo_debug.h>
-/* #include <cto_rpo.h> */
-#include <cto_kbo.h>
-#include <cto_kbolin.h>
-#include <cto_wpo.h>
-
+#include <cto_ocb.h>
 
 /*---------------------------------------------------------------------*/
 /*                    Data type declarations                           */
 /*---------------------------------------------------------------------*/
 
 
-
-
 /*---------------------------------------------------------------------*/
 /*                Exported Functions and Variables                     */
 /*---------------------------------------------------------------------*/
 
+bool          WPOGreater(OCB_p ocb, Term_p s, Term_p t, 
+          DerefType deref_s, DerefType deref_t);
 
-bool          TOGreater(OCB_p ocb, Term_p s, Term_p t, DerefType
-         deref_s, DerefType deref_t);
-CompareResult TOCompare(OCB_p ocb, Term_p s, Term_p t, DerefType
-         deref_s, DerefType deref_t);
-
-CompareResult TOCompareSymbolParse(Scanner_p in);
-PStackPointer TOSymbolComparisonChainParse(Scanner_p in, OCB_p ocb);
-PStackPointer TOPrecedenceParse(Scanner_p in, OCB_p ocb);
-void          TOSymbolWeightParse(Scanner_p in, OCB_p ocb);
-long          TOWeightsParse(Scanner_p in, OCB_p ocb);
-void          TOSymbolCoefParse(Scanner_p in, OCB_p ocb);
-long          TOCoefsParse(Scanner_p in, OCB_p ocb);
+CompareResult WPOCompare(OCB_p ocb, Term_p t1, Term_p t2,
+          DerefType deref_t1, DerefType deref_t2);
 
 #endif
 
 /*---------------------------------------------------------------------*/
 /*                        End of File                                  */
 /*---------------------------------------------------------------------*/
+

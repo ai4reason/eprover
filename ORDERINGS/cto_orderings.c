@@ -117,6 +117,9 @@ bool TOGreater(OCB_p ocb, Term_p s, Term_p t, DerefType deref_s,
    case KBO6:
     res = KBO6Greater(ocb, s, t, deref_s, deref_t);
     break;
+   case WPO:
+    res = WPOGreater(ocb, s, t, deref_s, deref_t);
+    break;
    default:
     assert(false);
     break;
@@ -194,6 +197,23 @@ CompareResult TOCompare(OCB_p ocb, Term_p s, Term_p t, DerefType deref_s,
     break;
    case KBO6:
     res = KBO6Compare(ocb, s, t, deref_s, deref_t);
+    break;
+   case WPO:
+    //fprintf(GlobalOut, "<WPO> LHS: ");
+    //TermPrint(GlobalOut, s, ocb->sig, deref_s);
+    //fprintf(GlobalOut, "\n<WPO> RHS: ");
+    //TermPrint(GlobalOut, t, ocb->sig, deref_t);
+    //fprintf(GlobalOut, "\n<WPO> enter\n");
+    res = WPOCompare(ocb, s, t, deref_s, deref_t);
+    if (OutputLevel >= 1) 
+    {
+       fprintf(GlobalOut, "<WPO> ");
+       TermPrint(GlobalOut, s, ocb->sig, deref_s);
+       fprintf(GlobalOut, " %s ", POCompareSymbol[res]);
+       TermPrint(GlobalOut, t, ocb->sig, deref_t);
+       fprintf(GlobalOut, "\n");
+       fflush(GlobalOut);
+    }
     break;
    case EMPTY:
          res  = to_uncomparable;
@@ -401,6 +421,42 @@ long TOWeightsParse(Scanner_p in, OCB_p ocb)
          res++;
       }
    }
+   return res;
+}
+
+void TOSymbolCoefParse(Scanner_p in, OCB_p ocb)
+{
+   FunCode       f;
+   double        coef;
+   int           i,arity;
+
+   f = SigParseKnownOperator(in, ocb->sig);
+   arity = SigFindArity(ocb->sig, f);
+   for (i=0; i<arity; i++)
+   {
+      AcceptInpTok(in, Colon);
+      coef = ParseFloat(in);
+      *OCBAlgebraCoefPos(ocb,f,i) = coef;
+   }
+}
+
+long TOCoefsParse(Scanner_p in, OCB_p ocb)
+{
+   long res = 0;
+
+   assert(ocb);
+   assert(ocb->sig_size == ocb->sig->f_count);
+
+   TOSymbolCoefParse(in, ocb);
+   res++;
+   while(TestInpTok(in, Comma))
+   {
+      AcceptInpTok(in, Comma);
+      TOSymbolCoefParse(in, ocb);
+      res++;
+   }
+   AcceptInpTok(in, NoToken); // check we are at the end
+
    return res;
 }
 

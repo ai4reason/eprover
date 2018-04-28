@@ -35,6 +35,7 @@ Changes
 #include <ccl_satinterface.h>
 #include <che_to_weightgen.h>
 #include <che_to_precgen.h>
+#include <che_to_coefgen.h>
 #include <ccl_clausefunc.h>
 #include <che_wfcbadmin.h>
 #include <che_litselection.h>
@@ -73,6 +74,10 @@ typedef struct heuristic_parms_cell
    long                to_const_weight;
    bool                to_defs_min;
    bool                no_lit_cmp;
+   // yan:
+   TOCoefGenMethod     to_coef_gen;
+   WeightAlgebra       to_weight_algebra;
+   char*               to_pre_coefs;
 
    /* Elements controling literal selection */
    LiteralSelectionFun selection_strategy;

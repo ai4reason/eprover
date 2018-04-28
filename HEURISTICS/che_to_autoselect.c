@@ -125,7 +125,7 @@ OCB_p generate_auto_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO
@@ -198,7 +198,7 @@ OCB_p generate_autocasc_ordering(ProofState_p state, SpecFeature_p spec)
       fputs("#\n", GlobalOut);
    }
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_CASC
@@ -254,7 +254,7 @@ OCB_p generate_autodev_ordering(ProofState_p state, SpecFeature_p spec)
       fputs("#\n", GlobalOut);
    }
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_DEV
@@ -299,7 +299,7 @@ OCB_p generate_autosched0_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED0
@@ -322,7 +322,7 @@ OCB_p generate_autosched1_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED1
@@ -345,7 +345,7 @@ OCB_p generate_autosched2_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED2
@@ -368,7 +368,7 @@ OCB_p generate_autosched3_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED3
@@ -391,7 +391,7 @@ OCB_p generate_autosched4_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED4
@@ -414,7 +414,7 @@ OCB_p generate_autosched5_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED5
@@ -437,7 +437,7 @@ OCB_p generate_autosched6_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED6
@@ -460,7 +460,7 @@ OCB_p generate_autosched7_ordering(ProofState_p state, SpecFeature_p spec)
 #include "che_auto_cases.c"
    print_oparms(&oparms);
    SpecLimitsCellFree(limits);
-   return TOCreateOrdering(state, &oparms, NULL, NULL);
+   return TOCreateOrdering(state, &oparms, NULL, NULL, NULL);
 }
 GCC_DIAGNOSTIC_POP
 #undef CHE_HEURISTICS_AUTO_SCHED67
@@ -493,6 +493,8 @@ void OrderParmsInitialize(HeuristicParms_p master, OrderParms_p slave)
    slave->to_prec_gen     = master->to_prec_gen;
    slave->to_const_weight = master->to_const_weight;
    slave->no_lit_cmp      = master->no_lit_cmp;
+   slave->to_coef_gen     = master->to_coef_gen;
+   slave->to_weight_algebra = master->to_weight_algebra;
 }
 
 
@@ -782,12 +784,12 @@ OCB_p OrderFindOptimal(OrderParms_p mask, OrderEvaluationFun eval_fun,
       (mask->to_const_weight==WConstNoWeight)?1:mask->to_const_weight;
 
    store = local;
-   best_ocb  = TOCreateOrdering(state, &local,NULL, NULL);
+   best_ocb  = TOCreateOrdering(state, &local,NULL, NULL, NULL);
    best_eval = eval_fun(best_ocb, state, parms);
 
    while(OrderNextOrdering(&local, mask))
    {
-      tmp_ocb  = TOCreateOrdering(state, &local, NULL, NULL);
+      tmp_ocb  = TOCreateOrdering(state, &local, NULL, NULL, NULL);
       tmp_eval = eval_fun(tmp_ocb, state, parms);
       if(tmp_eval < best_eval)
       {
@@ -894,7 +896,7 @@ OCB_p TOSelectOrdering(ProofState_p state, HeuristicParms_p params,
          tmp.to_const_weight = WConstNoSpecialWeight;
       }
       result = TOCreateOrdering(state, &tmp, params->to_pre_prec,
-                                params->to_pre_weights);
+         params->to_pre_weights, params->to_pre_coefs);
    }
    return result;
 }
@@ -914,7 +916,8 @@ OCB_p TOSelectOrdering(ProofState_p state, HeuristicParms_p params,
 /----------------------------------------------------------------------*/
 
 OCB_p  TOCreateOrdering(ProofState_p state, OrderParms_p params,
-                        char* pre_precedence, char* pre_weights)
+                        char* pre_precedence, char* pre_weights,
+                        char* pre_coefs)
 {
    OCB_p handle;
    bool prec_by_weight = pre_precedence?false:true;
@@ -962,6 +965,17 @@ OCB_p  TOCreateOrdering(ProofState_p state, OrderParms_p params,
                            pre_weights,
                            params->to_weight_gen,
                            params->to_const_weight);
+         break;
+   case WPO:
+         handle = OCBAlloc(WPO, prec_by_weight, state->signature);
+         handle->algebra = params->to_weight_algebra;
+         TOGeneratePrecedence(handle, state->axioms, pre_precedence,
+                              params->to_prec_gen);
+         TOGenerateWeights(handle, state->axioms,
+                           pre_weights,
+                           params->to_weight_gen,
+                           params->to_const_weight);
+         TOGenerateCoefs(handle, pre_coefs, params->to_coef_gen);
          break;
    case RPO:
          assert(false && "RPO not yet implemented!");

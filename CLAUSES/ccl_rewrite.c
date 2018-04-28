@@ -104,8 +104,11 @@ static bool instance_is_rule(OCB_p ocb, TB_p bank,
                                              bool restricted_rw)
 {
    assert(term);
+   static bool break_reported = false;
 
    /* printf("Starting chain\n"); */
+   Term_p first = term;
+   int i = 0;
    while(TermIsTopRewritten(term)&&(!restricted_rw||TermIsRRewritten(term)))
    {
       assert(term);
@@ -113,7 +116,27 @@ static bool instance_is_rule(OCB_p ocb, TB_p bank,
       {
     desc->sos_rewritten = true;
       }
+      //TBPrintTermFull(GlobalOut,desc->bank,first); fprintf(GlobalOut," #FIRST\n");
+      //TBPrintTermFull(GlobalOut,desc->bank,term); fprintf(GlobalOut," #BEFORE\n");
+      //Clause_p demod = TermRWDemodField(term);
       term = TermRWReplaceField(term);
+      i++;
+      if (i>100) { 
+         if (!break_reported) {
+            printf("Breaking follow chain\n"); 
+            break_reported = true;
+         }
+         return first;
+         //break; 
+      }
+      //if ((i>1) && (term == first)) 
+      //{ 
+      //   fprintf(GlobalOut, "<WPO> loop detected!\n");  
+      //   return first; 
+      //}
+      //TBPrintTermFull(GlobalOut,desc->bank,term); fprintf(GlobalOut," #AFTER\n");
+      //ClausePrint(GlobalOut,demod,true); fprintf(GlobalOut," #DEMOD\n");
+
       /* printf("Following chain\n"); */
       assert(term);
    }
@@ -465,6 +488,7 @@ static ClausePos_p indexed_find_demodulator(OCB_p ocb, Term_p term,
           (!restricted_rw ||
       !SubstIsRenaming(subst)))
        {
+        //if (pos->clause) { ClausePrint(GlobalOut, pos->clause, true); fprintf(GlobalOut, "# Left\n"); }
           res = pos;
        }
        break;
@@ -478,7 +502,9 @@ static ClausePos_p indexed_find_demodulator(OCB_p ocb, Term_p term,
                /* The prevous condition seems wrong! If subst is a
                   real substitution, we can alwayws rewrite! TODO! */
        {
+        //ClausePosPrint(GlobalOut, pos); fprintf(GlobalOut, "# Right\n");
           res = pos;
+        //if (pos->clause) { ClausePrint(GlobalOut, pos->clause, true); fprintf(GlobalOut, "# Right\n"); }
        }
        break;
       default:
@@ -651,12 +677,15 @@ static Term_p term_li_normalform(RWDesc_p desc, Term_p term,
 {
    bool    modified = true;
    Term_p new_term;
+   static bool break_reported = false;
 
+   Term_p first = term;
 
    if(desc->level == NoRewrite)
    {
       return term;
    }
+   //fprintf(GlobalOut, "POINT 0\n");
    term = term_follow_top_RW_chain(term, desc, restricted_rw);
    assert(!TermIsTopRewritten(term)||restricted_rw);
 
@@ -670,9 +699,22 @@ static Term_p term_li_normalform(RWDesc_p desc, Term_p term,
       assert(!TermIsRewritten(term));
       return term;
    }
+   int i = 0;
+   //fprintf(GlobalOut, "ENTER\n");
    while(modified)
    {
+      if (i>100) { 
+         if (!break_reported) {
+            printf("<WPO> Breaking rewriting chain\n"); 
+            break_reported = true;
+         }
+         return first;
+      }
+      i++;
+
+      //TermPrint(GlobalOut, term, desc->bank->sig, DEREF_ALWAYS); fprintf(GlobalOut, " # term before = %d\n", modified);
       modified = term_subterm_rewrite(desc, &term);
+      //TermPrint(GlobalOut, term, desc->bank->sig, DEREF_ALWAYS); fprintf(GlobalOut, " # term after = %d\n", modified);
 
       if(!TermIsVar(term))
       {

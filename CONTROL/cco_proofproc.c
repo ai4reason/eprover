@@ -1124,6 +1124,7 @@ void ProofControlInit(ProofState_p state,ProofControl_p control,
 
    control->ocb = TOSelectOrdering(state, params,
                                    &(control->problem_specs));
+   OCBDebugPrint(GlobalOut, control->ocb);  // yan
 
    in = CreateScanner(StreamTypeInternalString,
                       DefaultWeightFunctions,
@@ -1407,7 +1408,7 @@ void ProofStateInit(ProofState_p state, ProofControl_p control)
    {
       fvi_param_init(state, control);
    }
-   ProofStateInitWatchlist(state, control->ocb);
+   ProofStateInitWatchlist(state, control->ocb, NULL);
 
    tmphcb = GetHeuristic("Uniq", state, control, &(control->heuristic_parms));
    assert(tmphcb);
@@ -1590,12 +1591,24 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
       assert(clause->neg_lit_no == 0);
       if(EqnIsOriented(clause->literals))
       {
+         // yan wpo info:
+         fprintf(GlobalOut, "<WPO> RW: "); 
+         TBPrintTerm(GlobalOut, clause->literals->bank, clause->literals->lterm, true);
+         fprintf(GlobalOut, " -> ");
+         TBPrintTerm(GlobalOut, clause->literals->bank, clause->literals->rterm, true);
+         fprintf(GlobalOut, "\n");
+         //
          TermCellSetProp(clause->literals->lterm, TPIsRewritable);
          state->processed_pos_rules->date = clausedate;
          ClauseSetIndexedInsert(state->processed_pos_rules, pclause);
       }
       else
       {
+         // yan wpo info:
+         fprintf(GlobalOut, "<WPO> unoriented: "); 
+         ClausePrint(GlobalOut, clause, true); 
+         fprintf(GlobalOut, "\n");
+         //
          state->processed_pos_eqns->date = clausedate;
          ClauseSetIndexedInsert(state->processed_pos_eqns, pclause);
       }
