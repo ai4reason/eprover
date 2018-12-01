@@ -1603,6 +1603,27 @@ FunCode TermFindMaxVarCode(Term_p term)
    return res;
 }
 
+FunCode TermFindMaxVarCodeDeref(Term_p term, DerefType deref)
+{
+   int i;
+   long res, tmp;
+
+   term = TermDeref(term, &deref);
+   if(TermIsVar(term))
+   {
+      return term->f_code;
+   }
+   else
+   {
+      res = 0;
+      for(i=0; i<term->arity; i++)
+      {
+         tmp = TermFindMaxVarCodeDeref(term->args[i], deref);
+         res = MIN(res, tmp);
+      }
+   }
+   return res;
+}
 
 /*-----------------------------------------------------------------------
 //

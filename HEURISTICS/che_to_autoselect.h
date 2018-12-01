@@ -45,6 +45,8 @@ typedef struct order_parms_cell
    TOPrecGenMethod   to_prec_gen;
    bool              no_lit_cmp;
    long              to_const_weight;
+   TOCoefGenMethod     to_coef_gen; // TODO: yan
+   WeightAlgebra       to_weight_algebra; // TODO: yan
 }OrderParmsCell, *OrderParms_p;
 
 typedef double (*OrderEvaluationFun)(OCB_p ocb, ProofState_p state,
@@ -84,7 +86,7 @@ OCB_p  OrderFindOptimal(OrderParms_p mask, OrderEvaluationFun
 OCB_p  TOSelectOrdering(ProofState_p state, HeuristicParms_p params,
          SpecFeature_p specs);
 OCB_p  TOCreateOrdering(ProofState_p state, OrderParms_p params, char*
-         pre_precedence, char* pre_weights);
+         pre_precedence, char* pre_weights, char* pre_coefs);
 
 #endif
 

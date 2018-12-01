@@ -290,6 +290,9 @@ static void print_proof_stats(ProofState_p proofstate,
       fprintf(GlobalOut, "# Condensation successes               : %ld\n",
               CondensationSuccesses);
 
+      fprintf(GlobalOut, "# Broken rewriting chains              : %ld\n",
+               RewritingChainsBroken);
+
 #ifdef MEASURE_UNIFICATION
       fprintf(GlobalOut, "# Unification attempts                 : %ld\n",
               UnifAttempts);
@@ -1328,13 +1331,17 @@ CLState_p process_options(int argc, char* argv[])
             {
                h_parms->ordertype = KBO6;
             }
+            else if(strcmp(arg, "WPO")==0)
+            {
+               h_parms->ordertype = WPO;
+            }
             else
             {
                Error("Option -t (--term-ordering) requires Auto, "
                      "AutoCASC, AutoDev, AutoSched0, AutoSched1, "
                      "AutoSched2, AutoSched3, AutoSched4, AutoSched5,"
                      "AutoSched6, AutoSched7, Optimize, "
-                     "LPO, LPO4, KBO or KBO6 as an argument",
+                     "LPO, LPO4, KBO, KBO6, or WPO as an argument",
                      USAGE_ERROR);
             }
             break;
@@ -1396,6 +1403,37 @@ CLState_p process_options(int argc, char* argv[])
       case OPT_TO_RESTRICT_LIT_CMPS:
             h_parms->no_lit_cmp = true;
             break;
+      // TODO: yan
+      case OPT_TO_ALGEBRA:
+            h_parms->to_weight_algebra = TOTranslateAlgebra(arg);
+            if (!h_parms->to_weight_algebra) {
+               DStr_p err = DStrAlloc();
+               DStrAppendStr(err,
+                             "Wrong argument to option -a "
+                             "(--weight-algebra). Possible "
+                             "values: ");
+               DStrAppendStrArray(err, TOAlgebras, ", ");
+               Error(DStrView(err), USAGE_ERROR);
+               DStrFree(err);
+            }
+            break;
+      case OPT_TO_COEFS:
+            h_parms->to_pre_coefs = arg;
+            break;
+      case OPT_TO_COEFGEN:
+            h_parms->to_coef_gen = TOTranslateCoefGenMethod(arg);
+            if (!h_parms->to_coef_gen) {
+               DStr_p err = DStrAlloc();
+               DStrAppendStr(err,
+                             "Wrong argument to option -A "
+                             "(--algebra-coefs-generation). Possible "
+                             "values: ");
+               DStrAppendStrArray(err, TOCoefGenNames, ", ");
+               Error(DStrView(err), USAGE_ERROR);
+               DStrFree(err);
+            }
+            break;
+      // end of yan
       case OPT_TPTP_SOS:
             h_parms->use_tptp_sos = true;
             break;

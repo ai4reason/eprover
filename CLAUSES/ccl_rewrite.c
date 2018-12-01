@@ -32,13 +32,16 @@ bool RewriteStrongRHSInst = false;
 long BWRWMatchAttempts  = 0;
 long BWRWMatchSuccesses = 0;
 long BWRWRwSuccesses = 0;
+long RewritingChainsBroken = 0;
+
+#define RW_CHAIN_LIMIT 200
 
 /*---------------------------------------------------------------------*/
 /*                      Forward Declarations                           */
 /*---------------------------------------------------------------------*/
 
-static Term_p term_li_normalform(RWDesc_p desc, Term_p term,
-                                 bool restricted_rw);
+static Term_p term_li_normalform2(RWDesc_p desc, Term_p term,
+                                 bool restricted_rw, bool reset_depth);
 
 /*---------------------------------------------------------------------*/
 /*                         Internal Functions                          */
@@ -102,6 +105,9 @@ static bool instance_is_rule(OCB_p ocb, TB_p bank,
 {
    assert(term);
 
+   /* printf("Starting chain\n"); */
+   Term_p first = term;
+   int i = 0;
    while(TermIsTopRewritten(term)&&(!restricted_rw||TermIsRRewritten(term)))
    {
       assert(term);
@@ -110,9 +116,48 @@ static bool instance_is_rule(OCB_p ocb, TB_p bank,
          desc->sos_rewritten = true;
       }
 
+      //TermPrintFO(GlobalOut, term, desc->bank->sig, DEREF_NEVER); 
+      //printf("\n");
+      //TermPrintFO(GlobalOut, TermRWReplaceField(term), desc->bank->sig, DEREF_NEVER);
+      //printf("\n");
+      if (!TOGreater(desc->ocb, term, TermRWReplaceField(term), 
+                        DEREF_NEVER, DEREF_NEVER))
+      {
+         TermCellDelProp(term, TPIsRewritten);
+         RewritingChainsBroken++;
+         return first;
+      }
       assert(TOGreater(desc->ocb, term, TermRWReplaceField(term), 
                         DEREF_NEVER, DEREF_NEVER));
       term = TermRWReplaceField(term);
+      i++;
+      if (i>RW_CHAIN_LIMIT) { 
+         //if (!break_reported) {
+         //   printf("Breaking follow chain\n"); 
+         //   break_reported = true;
+         //}
+         //if (!restricted_rw)
+         //{
+            TermCellDelProp(term, TPIsRewritten);
+         //}
+         //else 
+         //{
+         //   TermCellDelProp(term, TPIsRRewritten);
+         //}
+         RewritingChainsBroken++;
+         //printf("!!! BREAK 1 !!!\n");
+         return first;
+         //break; 
+      }
+      //if ((i>1) && (term == first)) 
+      //{ 
+      //   fprintf(GlobalOut, "<WPO> loop detected!\n");  
+      //   return first; 
+      //}
+      //TBPrintTermFull(GlobalOut,desc->bank,term); fprintf(GlobalOut," #AFTER\n");
+      //ClausePrint(GlobalOut,demod,true); fprintf(GlobalOut," #DEMOD\n");
+
+      /* printf("Following chain\n"); */
       assert(term);
    }
    return term;
@@ -661,7 +706,7 @@ static bool term_subterm_rewrite(RWDesc_p desc, Term_p *term)
 
    for(i=0; i<(*term)->arity; i++)
    {
-      new_term->args[i] = term_li_normalform(desc, (*term)->args[i], false);
+      new_term->args[i] = term_li_normalform2(desc, (*term)->args[i], false, false);
       modified = modified || (new_term->args[i]!= (*term)->args[i]);
    }
    if(modified)
@@ -697,15 +742,39 @@ static bool term_subterm_rewrite(RWDesc_p desc, Term_p *term)
 static Term_p term_li_normalform(RWDesc_p desc, Term_p term,
                                  bool restricted_rw)
 {
+   return term_li_normalform2(desc, term, restricted_rw, true);
+}
+
+static Term_p term_li_normalform2(RWDesc_p desc, Term_p term,
+                                 bool restricted_rw, bool reset_depth)
+{
    bool    modified = true;
    Term_p new_term;
+   static long depth_counter = 0;
+   long depth_store;
+
+   if (reset_depth)
+   {
+      depth_counter = 0;
+   }
+   depth_counter++;
+   if (depth_counter > RW_CHAIN_LIMIT) 
+   {
+            //printf("<WPO> Too deep rewriting\n"); 
+            //TermCellDelProp(term, TPIsRewritten);
+            RewritingChainsBroken++;
+            //printf("!!! BREAK 2 !!!\n");
+            return term;
+   }
+
+   Term_p first = term;
 
    if(desc->level == NoRewrite)
    {
       return term;
    }
    term = term_follow_top_RW_chain(term, desc, restricted_rw);
-   assert(!TermIsTopRewritten(term)||restricted_rw);
+   //assert(!TermIsTopRewritten(term)||restricted_rw);
 
    if(!TermIsRewritten(term)&&
       !SysDateIsEarlier(term->rw_data.nf_date[desc->level-1],desc->demod_date))
@@ -717,9 +786,27 @@ static Term_p term_li_normalform(RWDesc_p desc, Term_p term,
       assert(!TermIsRewritten(term));
       return term;
    }
+   int i = 0;
+   //fprintf(GlobalOut, "ENTER\n");
    while(modified)
    {
+      if (i>RW_CHAIN_LIMIT) { 
+         //if (!break_reported) {
+         //   printf("<WPO> Breaking rewriting chain\n"); 
+         //   break_reported = true;
+         //}
+         TermCellDelProp(term, TPIsRewritten);
+         RewritingChainsBroken++;
+         //printf("!!! BREAK 3 !!!\n");
+         return first;
+      }
+      i++;
+
+      //TermPrint(GlobalOut, term, desc->bank->sig, DEREF_ALWAYS); fprintf(GlobalOut, " # term before = %d\n", modified);
+      depth_store = depth_counter;
       modified = term_subterm_rewrite(desc, &term);
+      depth_counter = depth_store;
+      //TermPrint(GlobalOut, term, desc->bank->sig, DEREF_ALWAYS); fprintf(GlobalOut, " # term after = %d\n", modified);
 
       if(!TermIsVar(term))
       {
@@ -783,6 +870,10 @@ EqnSide eqn_li_normalform(RWDesc_p desc, ClausePos_p pos, bool interred_rw)
    EqnSide res = NoSide;
 
    eqn->lterm = term_li_normalform(desc, eqn->lterm, restricted_rw);
+      //yan
+      //TBPrintTermFull(GlobalOut,desc->bank,l_old); fprintf(GlobalOut," #l_OLD\n");
+      //TBPrintTermFull(GlobalOut,desc->bank,eqn->lterm); fprintf(GlobalOut," #l_NEW\n");
+      //yan
    if(l_old!=eqn->lterm)
    {
       EqnDelProp(eqn, EPMaxIsUpToDate);

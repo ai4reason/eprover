@@ -763,6 +763,13 @@ long DerivStackExtractParents(PStack_p derivation,
 
       while(i<sp)
       {
+         // yan: this is completely wrong
+         if (i >= derivation->current) 
+         {
+            op = PStackElementInt(derivation, derivation->current-1);
+         }
+         else
+         //
          op = PStackElementInt(derivation, i);
          i++;
          if(DCOpHasCnfArg1(op))
@@ -850,6 +857,13 @@ long DerivStackExtractOptParents(PStack_p derivation,
 
       while(i<sp)
       {
+         // yan: this is completely wrong
+         if (i >= derivation->current) 
+         {
+            op = PStackElementInt(derivation, derivation->current-1);
+         }
+         else
+         //
          op = PStackElementInt(derivation, i);
          i++;
          if(DCOpHasCnfArg1(op))

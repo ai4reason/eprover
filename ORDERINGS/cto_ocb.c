@@ -22,6 +22,7 @@ Changes
 -----------------------------------------------------------------------*/
 
 #include "cto_ocb.h"
+#include "clb_simple_stuff.h"
 
 
 
@@ -51,9 +52,57 @@ char* TONames[]=
    "LPO4",
    "LPO4Copy",
    "RPO",
+   "WPO",
    "Empty"
 };
 
+char* TOAlgebras[]=
+{
+   "NoAlgebra",
+   "Sum",
+   "Max",
+   "SumVar0",
+   "SumVar1",
+   "SumVarN",
+   "SumVarZ",
+   "SumVar0First",
+   "SumVar1First",
+   "SumVarNFirst",
+   "SumVarZFirst",
+   "SumVar0Last",
+   "SumVar1Last",
+   "SumVarNLast",
+   "SumVarZLast",
+   "SumVar0Odds",
+   "SumVar1Odds",
+   "SumVarNOdds",
+   "SumVarZOdds",
+   "SumVar0Evens",
+   "SumVar1Evens",
+   "SumVarNEvens",
+   "SumVarZEvens",
+   "MaxVar0",
+   "MaxVar1",
+   "MaxVarN",
+   "MaxVarZ",
+   "MaxVar0First",
+   "MaxVar1First",
+   "MaxVarNFirst",
+   "MaxVarZFirst",
+   "MaxVar0Last",
+   "MaxVar1Last",
+   "MaxVarNLast",
+   "MaxVarZLast",
+   "MaxVar0Odds",
+   "MaxVar1Odds",
+   "MaxVarNOdds",
+   "MaxVarZOdds",
+   "MaxVar0Evens",
+   "MaxVar1Evens",
+   "MaxVarNEvens",
+   "MaxVarZEvens",
+   NULL
+};
 
 /*---------------------------------------------------------------------*/
 /*                      Forward Declarations                           */
@@ -146,6 +195,24 @@ static void alloc_precedence(OCB_p handle, bool prec_by_weight)
 }
 
 
+static void alloc_coefs(OCB_p handle)
+{
+   FunCode i;
+
+   handle->algebra_coefs = SizeMalloc(sizeof(double*)*handle->sig_size);
+   for (i=1; i<=handle->sig_size; i++) 
+   {
+      int arity = SigFindArity(handle->sig, i);
+      if (arity == 0) 
+      {
+         handle->algebra_coefs[i-1] = NULL;
+      }
+      else 
+      {
+         handle->algebra_coefs[i-1] = SizeMalloc(sizeof(double)*arity);
+      }
+   }
+}
 
 /*---------------------------------------------------------------------*/
 /*                         Exported Functions                          */
@@ -184,6 +251,8 @@ OCB_p OCBAlloc(TermOrdering type, bool prec_by_weight, Sig_p sig)
    handle->max_var = 0;
    handle->vb_size = 64;
    handle->vb      = SizeMalloc(handle->vb_size*sizeof(int));
+   handle->algebra = NoAlgebra;
+   handle->algebra_coefs = NULL;
    for(size_t i=0; i<handle->vb_size; i++)
    {
       handle->vb[i] = 0;
@@ -205,6 +274,11 @@ OCB_p OCBAlloc(TermOrdering type, bool prec_by_weight, Sig_p sig)
    case RPO:
     alloc_precedence(handle, prec_by_weight);
     break;
+      case WPO:
+         handle->weights = SizeMalloc(sizeof(long)*(handle->sig_size+1));
+         alloc_precedence(handle, prec_by_weight);
+         alloc_coefs(handle);
+         break;
    case EMPTY:
          break;
    default:
@@ -232,6 +306,18 @@ OCB_p OCBAlloc(TermOrdering type, bool prec_by_weight, Sig_p sig)
       }
    }
 
+   if(handle->algebra_coefs)
+   {
+      for(i=1; i<=handle->sig_size; i++)
+      {
+         int arity = SigFindArity(handle->sig, i);
+         for (j=0; j<arity; j++) 
+         {
+            *OCBAlgebraCoefPos(handle,i,j) = 1.0;
+         }
+      }
+   }
+
    return handle;
 }
 
@@ -255,7 +341,7 @@ void OCBFree(OCB_p junk)
 
    if(junk->weights)
    {
-      assert(junk->type == KBO || junk->type==KBO6);
+      assert(junk->type == KBO || junk->type==KBO6 || junk->type==WPO);
       SizeFree(junk->weights, sizeof(long)*(junk->sig_size+1));
       junk->weights = NULL;
    }
@@ -265,6 +351,7 @@ void OCBFree(OCB_p junk)
       assert(junk->type == KBO ||
              junk->type == KBO6 ||
              junk->type == LPO ||
+             junk->type == WPO ||
              junk->type == LPOCopy ||
              junk->type == LPO4 ||
              junk->type == LPO4Copy ||
@@ -279,6 +366,7 @@ void OCBFree(OCB_p junk)
       assert(junk->type == KBO ||
              junk->type == KBO6 ||
              junk->type == LPO ||
+             junk->type == WPO ||
              junk->type == LPOCopy ||
              junk->type == LPO4 ||
              junk->type == LPO4Copy ||
@@ -371,9 +459,44 @@ void OCBDebugPrint(FILE* out, OCB_p ocb)
     fprintf(out, "\n");
       }
    }
+   else if (ocb->prec_weights)
+   {
+      fprintf(out, "# Precedence defined by weights:\n");
+      fprintf(out, "# fcode | weight | symbol/arity\n");
+      for (j=1; j<=ocb->sig_size; j++) 
+      {
+         fprintf(out, "  %2ld    | %2ld     | %s/%d\n",
+            j,
+            ocb->prec_weights[j],
+            SigFindName(ocb->sig, j), 
+            SigFindArity(ocb->sig, j)
+         );
+      }
+   }
    else
    {
       fprintf(out, "# No precedence!\n");
+   }
+   fprintf(out, "# -----------------------------------------------\n");
+   fprintf(out, "# Weight algebra: %s\n", TOAlgebras[ocb->algebra]);
+   if(ocb->algebra_coefs) 
+   {
+      fprintf(out, "# Weight algebra coeficients:\n");
+      for(i=1; i<=ocb->sig_size; i++)
+      {
+         int arity = SigFindArity(ocb->sig, i);
+         fprintf(out, "   %20s := %ld", SigFindName(ocb->sig,i), OCBFunWeight(ocb,i));
+         for (j=0; j<arity; j++) 
+         {
+            fprintf(out, " + %.2f*X%ld", *OCBAlgebraCoefPos(ocb,i,j), j+1);
+         }
+         fprintf(out, "\n");
+      }
+
+   }
+   else
+   {
+      fprintf(out, "# No weight algebra coeficients!\n");
    }
    fprintf(out, "# ===============================================\n");
 }
@@ -602,6 +725,18 @@ CompareResult OCBFunCompareMatrix(OCB_p ocb, FunCode f1, FunCode f2)
    return Q_TO_PART(f2-f1);
 }
 
+WeightAlgebra TOTranslateAlgebra(char* name)
+{
+   int method;
+
+   method = StringIndex(name, TOAlgebras);
+
+   if(method == -1)
+   {
+      method = NoAlgebra;
+   }
+   return (WeightAlgebra)method;
+}
 
 /*---------------------------------------------------------------------*/
 /*                        End of File                                  */

@@ -295,6 +295,12 @@ bool TermComputeRWSequence(PStack_p stack, Term_p from, Term_p to,
 
    while(from != to)
    {
+      //yan hack
+      if (!TermIsRewritten(from))
+      {
+         return true;
+      }
+      //
       assert(TermIsRewritten(from));
       demod = TermRWDemod(from);
       tmp = TermRWReplaceField(from);

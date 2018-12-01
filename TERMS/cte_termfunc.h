@@ -121,6 +121,7 @@ bool    TermIsGroundCompute(Term_p term);
          TermIsGroundCompute((term)))
 
 FunCode TermFindMaxVarCode(Term_p term);
+FunCode TermFindMaxVarCodeDeref(Term_p term, DerefType deref);
 
 long    VarBankCheckBindings(FILE* out, VarBank_p bank, Sig_p sig);
 

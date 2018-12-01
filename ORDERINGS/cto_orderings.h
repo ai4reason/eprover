@@ -30,6 +30,7 @@ Changes
 /* #include <cto_rpo.h> */
 #include <cto_kbo.h>
 #include <cto_kbolin.h>
+#include <cto_wpo.h>
 
 
 /*---------------------------------------------------------------------*/
@@ -54,6 +55,8 @@ PStackPointer TOSymbolComparisonChainParse(Scanner_p in, OCB_p ocb);
 PStackPointer TOPrecedenceParse(Scanner_p in, OCB_p ocb);
 void          TOSymbolWeightParse(Scanner_p in, OCB_p ocb);
 long          TOWeightsParse(Scanner_p in, OCB_p ocb);
+void          TOSymbolCoefParse(Scanner_p in, OCB_p ocb);
+long          TOCoefsParse(Scanner_p in, OCB_p ocb);
 
 #endif
 

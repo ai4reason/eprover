@@ -66,6 +66,7 @@ extern long RewriteUnboundVarFails;
 extern bool RewriteStrongRHSInst;
 extern long BWRWMatchAttempts;
 extern long BWRWMatchSuccesses;
+extern long RewritingChainsBroken;
 
 
 Term_p TermComputeLINormalform(OCB_p ocb, TB_p bank, Term_p term,

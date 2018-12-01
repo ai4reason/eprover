@@ -1530,12 +1530,30 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
       assert(clause->neg_lit_no == 0);
       if(EqnIsOriented(clause->literals))
       {
+         // yan wpo info:
+         if (OutputLevel >= 1)
+         {
+            fprintf(GlobalOut, "<WPO> RW: "); 
+            TBPrintTerm(GlobalOut, clause->literals->bank, clause->literals->lterm, true);
+            fprintf(GlobalOut, " -> ");
+            TBPrintTerm(GlobalOut, clause->literals->bank, clause->literals->rterm, true);
+            fprintf(GlobalOut, "\n");
+         }
+         //
          TermCellSetProp(clause->literals->lterm, TPIsRewritable);
          state->processed_pos_rules->date = clausedate;
          ClauseSetIndexedInsert(state->processed_pos_rules, pclause);
       }
       else
       {
+         // yan wpo info:
+         if (OutputLevel >= 1)
+         {
+            fprintf(GlobalOut, "<WPO> unoriented: "); 
+            ClausePrint(GlobalOut, clause, true); 
+            fprintf(GlobalOut, "\n");
+         }
+         //
          state->processed_pos_eqns->date = clausedate;
          ClauseSetIndexedInsert(state->processed_pos_eqns, pclause);
       }
