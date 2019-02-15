@@ -4,12 +4,12 @@
 #include <ccl_clauses.h>
 
 /* first add all conjecture clauses one by one (order matters, what's the covention?) */
-void torch_conjecture_clause(Clause_p cl);
+void te_conjecture_clause(Clause_p cl);
 /* call this when all conjecture clauses have been submitted */
-void torch_conjecture_done();
+void te_conjecture_done();
 
 /* model will now evaluate clauses in the context of the above conjectures,
  caching sub-term embeddings along the way */
-float torch_eval_clause(Clause_p t);
+float te_eval_clause(Clause_p t);
 
 #endif

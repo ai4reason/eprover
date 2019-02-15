@@ -116,6 +116,7 @@ top: E
 links: remove_links
 	@mkdir -p include;
 	@cd include;\
+	$(LN) ../CONTRIB/torcheval/torcheval.h torcheval.h;\
 	for subdir in $(HEADERS); do\
 		for file in ../$$subdir/*.h; do\
 			$(LN) $$file .;\
@@ -123,6 +124,7 @@ links: remove_links
 	done;
 	@mkdir -p lib;
 	@cd lib;\
+	$(LN) ../CONTRIB/TORCHEVAL.a TORCHEVAL.a;\
 	for subdir in $(LIBS); do\
 		$(LN) ../$$subdir/$$subdir.a .;\
 	done;
