@@ -22,6 +22,7 @@ Changes
 
 #include "che_torchweight.h"
 
+#include <torcheval.h>
 
 /*---------------------------------------------------------------------*/
 /*                        Global Variables                             */
@@ -69,11 +70,11 @@ static void extweight_init(TorchWeightParam_p data)
    {
       if (ClauseQueryTPTPType(clause)==CPTypeNegConjecture) 
       {
-         // conjecture_clause(clause); // TODO
+         te_conjecture_clause(clause);
       }
    }
 
-   // conjecture_done(); // TODO
+   te_conjecture_done();
    data->inited = true;
 }
 
@@ -137,7 +138,7 @@ double TorchWeightCompute(void* data, Clause_p clause)
    
    long long start = GetUSecClock();
 
-   //res = eval(clause);  // TODO
+   res = te_eval_clause(clause); 
    
    if (OutputLevel == 1) 
    {
