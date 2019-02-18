@@ -3,9 +3,7 @@ CPP     = g++
 CPPFLAGS = -O3 -Wall -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 CPPINCLUDES = -Ilibtorch/include -Ilibtorch/include/torch/csrc/api/include
 
-CC        = gcc
-CFLAGS    = -O3 -Wall
-CINCLUDES = -I../../include
+include ../../Makefile.vars
 
 # Default rule is to build the executable.
 all: torcheval.a
@@ -20,9 +18,8 @@ torcheval.a: torcheval.o torch.o
 %.o: %.cpp
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) -o $@ -c $<
 
-# Pattern rule to compile all the C files.
-%.o: %.c
-	$(CC) $(CFLAGS) $(CINCLUDES) -o $@ -c $<
+torcheval.o: torcheval.c torcheval.h 
+	$(CC) $(CFLAGS) -I../../include -o $@ -c $<
 
 .PHONY: clean
 clean: 
