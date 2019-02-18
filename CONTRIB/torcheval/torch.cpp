@@ -51,20 +51,6 @@ static unordered_map<void*,Tensor> term_embedding_cache[2];
 /* ... and there are two caches for non-negated and negated equations */
 static unordered_map<pair<void*,void*>,Tensor,pair_hasher<void*>> eqn_embedding_cache[2];
 
-static Model get_named_model(const string& name)
-{
-  static unordered_map<string,Model> named_model_cache;
-  
-  auto search = named_model_cache.find(name);
-  if (search != named_model_cache.end()) {
-    return search->second;
-  } else {
-    Model m = torch::jit::load(name);
-    named_model_cache[name] = m;
-    return m;
-  }
-}
-
 static unordered_map<string,long> load_constant_lookup()
 {
   std::ifstream infile("models/translate_const.txt");
@@ -148,10 +134,24 @@ bool torch_stack_equality_or_negation(void* l, void* r, bool negated)
   return false;
 }
 
+static Model get_named_model(const string& name)
+{
+  static unordered_map<string,Model> named_model_cache;
+  
+  auto search = named_model_cache.find(name);
+  if (search != named_model_cache.end()) {
+    return search->second;
+  } else {
+    Model m = torch::jit::load("models/str/"+name+".pt");
+    named_model_cache[name] = m;
+    return m;
+  }
+}
+
 void torch_embed_and_cache_term(const char* sname, void* term)
 {
   // get model
-  Model m = get_named_model(/*TODO: more name magic here*/sname);
+  Model m = get_named_model(sname);
   
   // compute
   static std::vector<IVal> inputs;
@@ -277,7 +277,7 @@ void torch_embed_clause(bool aside)
 void torch_embed_conjectures()
 {
   // load model (unless already there)
-  static Model m = torch::jit::load("conj_concat.pt");
+  static Model m = torch::jit::load("TODO");
 
   // compute a single conjecture embedding
   static std::vector<IVal> inputs;
