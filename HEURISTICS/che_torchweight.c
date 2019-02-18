@@ -65,6 +65,8 @@ static void extweight_init(TorchWeightParam_p data)
    Clause_p clause;
    Clause_p anchor;
 
+   te_init();
+
    anchor = data->proofstate->axioms->anchor;
    for (clause=anchor->succ; clause!=anchor; clause=clause->succ)
    {
@@ -138,7 +140,7 @@ double TorchWeightCompute(void* data, Clause_p clause)
    
    long long start = GetUSecClock();
 
-   res = te_eval_clause(clause); 
+   res = te_eval_clause(clause);
    
    if (OutputLevel == 1) 
    {
