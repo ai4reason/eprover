@@ -78,7 +78,7 @@ static Tensor get_named_constant(const string& name)
     static Model m = torch::jit::load("models/s_emb.pt");
     static std::vector<IVal> inputs;
     inputs.clear();
-    inputs.push_back(torch::tensor({constant_lookup[name]},at::kLong));
+    inputs.push_back(torch::tensor(constant_lookup[name],at::kLong));
     Tensor result = m->forward(inputs).toTensor()[0];
     constant_embeddings[name] = result;
     
