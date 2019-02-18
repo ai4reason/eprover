@@ -54,7 +54,7 @@ svdlibc/libsdv.a:
 
 torcheval: torcheval/torcheval.a
 
-torcheval/torcheval.a:
+torcheval/torcheval.a: torcheval/torcheval.h torcheval/torcheval.c torcheval/torch.h torcheval/torch.cpp
 	make -C torcheval all
 	@if [ -f TORCHEVAL.a ]; then\
 		rm TORCHEVAL.a;\
