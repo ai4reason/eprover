@@ -67,9 +67,11 @@ static void embed_literals(Clause_p cl)
   {
     bool negated = EqnIsNegative(lit);
     
+    /*
     fprintf(stderr,"Literal: neg%d ",negated);
     EqnPrint(stderr,lit,negated,true);
     fprintf(stderr,"\n");
+    */
     
     if (lit->rterm->f_code == SIG_TRUE_CODE) { // predicate symbol case:
       if (negated) {
@@ -133,9 +135,11 @@ void te_conjecture_done()
 
 float te_eval_clause(Clause_p cl)
 {
+  /*
   fprintf(stderr,"te_eval_clause\n");
   ClausePrint(stderr, cl, true);
   fprintf(stderr,"\n");
+  */
 
   torch_push();
 
@@ -144,9 +148,5 @@ float te_eval_clause(Clause_p cl)
   // implicit pull
   torch_embed_clause(/* aside= */ true); // setting result aside, where the below function finds it
 
-  float f = torch_eval_clause();
-
-  fprintf(stderr,"FINISHED\n");
-
-  return f;
+  return torch_eval_clause();
 }

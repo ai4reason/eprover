@@ -6,6 +6,7 @@
 #include <memory>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 
 using std::size_t;
 using std::pair;
@@ -51,7 +52,7 @@ static unordered_map<void*,Tensor> term_embedding_cache[2];
 /* ... and there are two caches for non-negated and negated equations */
 static unordered_map<pair<void*,void*>,Tensor,pair_hasher<void*>> eqn_embedding_cache[2];
 
-static unordered_map<string,long> load_constant_lookup()
+static unordered_map<string,long> load_constant_id_lookup()
 {
   std::ifstream infile("models/translate_const.txt");
   
@@ -68,17 +69,24 @@ static unordered_map<string,long> load_constant_lookup()
 
 static Tensor get_named_constant(const string& name)
 {
-  static unordered_map<string,long> constant_lookup = load_constant_lookup();
+  static unordered_map<string,long> constant_id_lookup = load_constant_id_lookup();
   static unordered_map<string,Tensor> constant_embeddings;
   
-  auto search = constant_embeddings.find(name);
-  if (search != constant_embeddings.end()) {
-    return search->second;
+  auto search_name = constant_embeddings.find(name);
+  if (search_name != constant_embeddings.end()) {
+    return search_name->second;
   } else {
     static Model m = torch::jit::load("models/s_emb.pt");
     static std::vector<IVal> inputs;
+    
+    auto search_id = constant_id_lookup.find(name);
+    if (search_id == constant_id_lookup.end()) {
+      cerr << "Couldn't resolve constant index for "<< name << endl;
+      exit(1);
+    }
+    
     inputs.clear();
-    inputs.push_back(torch::tensor((int64_t)constant_lookup[name],at::kLong));
+    inputs.push_back(torch::tensor((int64_t)search_id->second,at::kLong));
     Tensor result = m->forward(inputs).toTensor()[0];
     constant_embeddings[name] = result;
     
@@ -306,17 +314,13 @@ float torch_eval_clause()
   // inputs.push_back(conj_embedding);
   inputs.push_back(clause_embedding);
 
-  // auto temp = m->forward(inputs).toTensor();
-
   Tensor output = m->forward(inputs).toTensor();
   
-  cerr << output << endl;
+  // cerr << output << endl;
   
-  auto res = output.data<float>();
+  auto raw_data = output.data<float>();
   
-  // cerr << temp << endl;
-
-  return 1.0 / (1.0 + exp(res[1]-res[0]));
+  return 1.0 / (1.0 + exp(raw_data[1]-raw_data[0]));
 }
 
 
