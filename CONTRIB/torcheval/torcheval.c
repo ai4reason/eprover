@@ -144,5 +144,9 @@ float te_eval_clause(Clause_p cl)
   // implicit pull
   torch_embed_clause(/* aside= */ true); // setting result aside, where the below function finds it
 
-  return torch_eval_clause();
+  float f = torch_eval_clause();
+
+  fprintf(stderr,"FINISHED\n");
+
+  return f;
 }

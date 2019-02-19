@@ -252,7 +252,8 @@ void torch_embed_and_cache_equality_negation(void* l, void* r)
 
 void torch_embed_clause(bool aside)
 {
-  cerr << "torch_embed_clause " << main_stack_top << " " << main_stack[main_stack_top]->size() << endl;
+
+  // cerr << "torch_embed_clause " << main_stack_top << " " << main_stack[main_stack_top]->size() << endl;
 
   // load model (unless already there)
   static Model m = torch::jit::load("models/clausenet.pt");
@@ -261,10 +262,16 @@ void torch_embed_clause(bool aside)
   static std::vector<IVal> inputs;
   inputs.clear();
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
-  Tensor result = m->forward(inputs).toTensor();
   
+  // cerr << inputs[0] << endl;
+  
+  Tensor result = m->forward(inputs).toTensor();
+
+
   main_stack[main_stack_top]->clear();
   main_stack_top--;
+  
+  // Tensor result = torch::zeros(8);
   
   if (aside) {
     clause_embedding = result;
@@ -299,9 +306,17 @@ float torch_eval_clause()
   // inputs.push_back(conj_embedding);
   inputs.push_back(clause_embedding);
 
-  auto output = (m->forward(inputs).toTensor()).data<float>();
+  // auto temp = m->forward(inputs).toTensor();
 
-  return 1.0 / (1.0 + exp(output[1]-output[0]));
+  Tensor output = m->forward(inputs).toTensor();
+  
+  cerr << output << endl;
+  
+  auto res = output.data<float>();
+  
+  // cerr << temp << endl;
+
+  return 1.0 / (1.0 + exp(res[1]-res[0]));
 }
 
 
