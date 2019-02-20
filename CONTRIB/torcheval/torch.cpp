@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <cstdio>
 
 using std::size_t;
 using std::pair;
@@ -77,7 +78,6 @@ static Tensor get_named_constant(const string& name)
     return search_name->second;
   } else {
     static Model m = torch::jit::load("models/s_emb.pt");
-    static std::vector<IVal> inputs;
     
     auto search_id = constant_id_lookup.find(name);
     if (search_id == constant_id_lookup.end()) {
@@ -85,11 +85,19 @@ static Tensor get_named_constant(const string& name)
       exit(1);
     }
     
+    // fprintf(stdout,"FORWARD: models/s_emb.pt\n");
+    
+    static std::vector<IVal> inputs;
     inputs.clear();
     inputs.push_back(torch::tensor((int64_t)search_id->second,at::kLong));
     Tensor result = m->forward(inputs).toTensor()[0];
     constant_embeddings[name] = result;
     
+#ifdef LOGGING
+    cout << "constant " << name << endl;
+    cout << result << endl;
+#endif
+
     // cerr << "get_named_constant: " << result << endl;
     
     return result;
@@ -161,11 +169,20 @@ void torch_embed_and_cache_term(const char* sname, void* term)
   // get model
   Model m = get_named_model(sname);
   
+  // fprintf(stdout,"FORWARD: %s\n",sname);
+  
   // compute
   static std::vector<IVal> inputs;
   inputs.clear();
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
+  
   Tensor result = m->forward(inputs).toTensor();
+  
+#ifdef LOGGING
+  cout << "function " << sname << endl;
+  cout << inputs[0] << endl;
+  cout << result << endl;
+#endif
 
   // cache
   term_embedding_cache[/*negated=*/false][term] = result;
@@ -185,14 +202,23 @@ static Model model_negator = torch::jit::load("models/str/~.pt");
 
 void torch_embed_and_cache_term_negation(void* term)
 {
+  // fprintf(stdout,"FORWARD: ~\n");
+
   // compute
   assert(main_stack_top>=0);
   assert(main_stack[main_stack_top]->size() == 1);
   static std::vector<IVal> inputs;
   inputs.clear();
+  
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
   Tensor result = model_negator->forward(inputs).toTensor();
   
+#ifdef LOGGING
+  cout << "negating " << endl;
+  cout << inputs[0] << endl;
+  cout << result << endl;
+#endif
+
   // cache
   term_embedding_cache[/*negated=*/true][term] = result;
   
@@ -211,6 +237,8 @@ void torch_embed_and_cache_equality(void* l, void* r)
 {
   static Model m = torch::jit::load("models/str/=.pt");
 
+ // fprintf(stdout,"FORWARD: =\n");
+
   // compute
   assert(main_stack_top>=0);
   assert(main_stack[main_stack_top]->size() == 2);
@@ -219,6 +247,12 @@ void torch_embed_and_cache_equality(void* l, void* r)
   inputs.clear();
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
   Tensor result = m->forward(inputs).toTensor();
+  
+#ifdef LOGGING
+  cout << "equality " << endl;
+  cout << inputs[0] << endl;
+  cout << result << endl;
+#endif
   
   // cache
   eqn_embedding_cache[/*negated=*/false][make_pair(l,r)] = result;
@@ -236,6 +270,8 @@ void torch_embed_and_cache_equality(void* l, void* r)
 
 void torch_embed_and_cache_equality_negation(void* l, void* r)
 {
+  // fprintf(stdout,"FORWARD: ~\n");
+
   // compute
   assert(main_stack_top>=0);
   assert(main_stack[main_stack_top]->size() == 1);
@@ -243,6 +279,12 @@ void torch_embed_and_cache_equality_negation(void* l, void* r)
   inputs.clear();
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
   Tensor result = model_negator->forward(inputs).toTensor();
+  
+#ifdef LOGGINGGING
+  cout << "negating equality" << endl;
+  cout << inputs[0] << endl;
+  cout << result << endl;
+#endif
   
   // cache
   eqn_embedding_cache[/*negated=*/true][make_pair(l,r)] = result;
@@ -260,7 +302,7 @@ void torch_embed_and_cache_equality_negation(void* l, void* r)
 
 void torch_embed_clause(bool aside)
 {
-
+  // fprintf(stdout,"FORWARD: clausenet.pt\n");
   // cerr << "torch_embed_clause " << main_stack_top << " " << main_stack[main_stack_top]->size() << endl;
 
   // load model (unless already there)
@@ -271,10 +313,13 @@ void torch_embed_clause(bool aside)
   inputs.clear();
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
   
-  // cerr << inputs[0] << endl;
-  
   Tensor result = m->forward(inputs).toTensor();
 
+#ifdef LOGGING
+  cout << "clausenet " << endl;
+  cout << inputs[0] << endl;
+  cout << result << endl;
+#endif
 
   main_stack[main_stack_top]->clear();
   main_stack_top--;
@@ -291,14 +336,23 @@ void torch_embed_clause(bool aside)
 
 void torch_embed_conjectures()
 {
+  // fprintf(stdout,"FORWARD: conjecturenet.pt\n");
+  
   // load model (unless already there)
-  static Model m = torch::jit::load("TODO");
+  static Model m = torch::jit::load("models/conjecturenet.pt");
 
   // compute a single conjecture embedding
   static std::vector<IVal> inputs;
   inputs.clear();
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
+  
   conj_embedding = m->forward(inputs).toTensor();
+  
+#ifdef LOGGING
+  cout << "conjecturenet" << endl;
+  cout << inputs[0] << endl;
+  cout << conj_embedding << endl;
+#endif
   
   main_stack[main_stack_top]->clear();
   main_stack_top--;
@@ -306,17 +360,21 @@ void torch_embed_conjectures()
 
 float torch_eval_clause()
 {
+  // fprintf(stdout,"FORWARD: final.pt\n");
+
   // load model (unless already there)
   static Model m = torch::jit::load("models/final.pt");
   
   static vector<IVal> inputs;
   inputs.clear();
-  // inputs.push_back(conj_embedding);
-  inputs.push_back(clause_embedding);
-
+  inputs.push_back(torch::cat({clause_embedding,conj_embedding},0));
   Tensor output = m->forward(inputs).toTensor();
   
-  // cerr << output << endl;
+#ifdef LOGGING
+  cout << "final" << endl;
+  cout << inputs[0] << endl;
+  cout << output << endl;
+#endif
   
   auto raw_data = output.data<float>();
   

@@ -14,6 +14,7 @@ static void embed_term(Term_p t, TB_p bank)
 {
   if (torch_stack_term_or_negation(t,/* negated= */false)) {
     // found in cache
+    // fprintf(stdout,"CACHE: term of weight %ld\n",t->weight);
     return;
   }
   
@@ -42,14 +43,15 @@ static void embed_term(Term_p t, TB_p bank)
 static void embed_equality(Term_p l, Term_p r, TB_p bank)
 {
   /*
-  fprintf(stderr,"embed_equality for ");
-  TBPrintTerm(stderr, bank, l, true);
-  fprintf(stderr,", ");
-  TBPrintTerm(stderr, bank, r, true);
-  fprintf(stderr,"\n");
+  fprintf(stdout,"embed_equality for ");
+  TBPrintTerm(stdout, bank, l, true);
+  fprintf(stdout,", ");
+  TBPrintTerm(stdout, bank, r, true);
+  fprintf(stdout,"\n");
   */
 
   if (torch_stack_equality_or_negation(l,r,/* negated= */ false)) {
+    // fprintf(stdout,"CACHE: eqn of weight %ld\n",l->weight+r->weight);
     // found in cache
     return;
   }
@@ -68,14 +70,15 @@ static void embed_literals(Clause_p cl)
     bool negated = EqnIsNegative(lit);
     
     /*
-    fprintf(stderr,"Literal: neg%d ",negated);
-    EqnPrint(stderr,lit,negated,true);
-    fprintf(stderr,"\n");
+    fprintf(stdout,"Literal: neg%d ",negated);
+    EqnPrint(stdout,lit,negated,true);
+    fprintf(stdout,"\n");
     */
     
     if (lit->rterm->f_code == SIG_TRUE_CODE) { // predicate symbol case:
-      if (negated) {
+      if (0 /* TODO */ && negated) {
         if (torch_stack_term_or_negation(lit->lterm,/* negated= */true)) {
+          // fprintf(stdout,"CACHE: negated term of weight %ld\n",lit->lterm->weight);
           // found in cache
           continue;
         }
@@ -94,6 +97,7 @@ static void embed_literals(Clause_p cl)
       // TODO: think of dealing with commutativity of "="
       if (negated) {
         if (torch_stack_equality_or_negation(lit->lterm,lit->rterm,/* negated= */ true)) {
+          // fprintf(stdout,"CACHE: negated eqn of weight %ld\n",lit->lterm->weight+lit->rterm->weight);
           // found in cache
           continue;
         }
@@ -114,31 +118,31 @@ static void embed_literals(Clause_p cl)
 void te_init()
 {
   // get ready to collecting clause embeddings
-  // torch_push();
+  torch_push();
 }
 
 void te_conjecture_clause(Clause_p cl)
 {
-  // torch_push();
+  torch_push();
   
-  // embed_literals(cl);
+  embed_literals(cl);
   
   // implicit pull and store below
-  // torch_embed_clause(false);
+  torch_embed_clause(false);
 }
 
 void te_conjecture_done()
 {
   // implicit pull (corresponds to the push in te_init)
-  // torch_embed_conjectures();
+  torch_embed_conjectures();
 }
 
 float te_eval_clause(Clause_p cl)
 {
   /*
-  fprintf(stderr,"te_eval_clause\n");
-  ClausePrint(stderr, cl, true);
-  fprintf(stderr,"\n");
+  fprintf(stdout,"te_eval_clause\n");
+  ClausePrint(stdout, cl, true);
+  fprintf(stdout,"\n");
   */
 
   torch_push();

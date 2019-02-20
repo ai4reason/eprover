@@ -140,12 +140,14 @@ double TorchWeightCompute(void* data, Clause_p clause)
    
    long long start = GetUSecClock();
 
-   res = te_eval_clause(clause);
-   
+   double clen = ClauseWeight(clause,1,1,1,1,1,false);
+   double eval = te_eval_clause(clause);
+
+   res = clen * eval;
+  
    if (OutputLevel == 1) 
    {
-      double clen = ClauseWeight(clause,1,1,1,1,1,false);
-      fprintf(GlobalOut, "=%.2f (torch,t=%.3fms,clen=%.1f): ", res, (double)(GetUSecClock() - start)/ 1000.0, clen);
+      fprintf(GlobalOut, "=%.2f (torch,t=%.3fms,eval=%.3f,clen=%.1f): ", res, (double)(GetUSecClock() - start)/ 1000.0, eval, clen);
       ClausePrint(GlobalOut, clause, true);
       fprintf(GlobalOut, "\n");
    }
