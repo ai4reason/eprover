@@ -19,6 +19,8 @@ using std::endl;
 using std::cout;
 using std::cerr;
 
+// #define LOGGING 1
+
 template <class T>
 inline void hash_combine(size_t& seed, const T& v)
 {
@@ -55,7 +57,7 @@ static unordered_map<pair<void*,void*>,Tensor,pair_hasher<void*>> eqn_embedding_
 
 static unordered_map<string,long> load_constant_id_lookup()
 {
-  std::ifstream infile("models/translate_const.txt");
+  std::ifstream infile("models2/translate_const.txt");
   
   unordered_map<string,long> result;
   
@@ -77,7 +79,7 @@ static Tensor get_named_constant(const string& name)
   if (search_name != constant_embeddings.end()) {
     return search_name->second;
   } else {
-    static Model m = torch::jit::load("models/s_emb.pt");
+    static Model m = torch::jit::load("models2/s_emb.pt");
     
     auto search_id = constant_id_lookup.find(name);
     if (search_id == constant_id_lookup.end()) {
@@ -85,7 +87,9 @@ static Tensor get_named_constant(const string& name)
       exit(1);
     }
     
-    // fprintf(stdout,"FORWARD: models/s_emb.pt\n");
+    // cout << (int64_t)search_id->second << endl;
+    
+    // fprintf(stdout,"FORWARD: models2/s_emb.pt\n");
     
     static std::vector<IVal> inputs;
     inputs.clear();
@@ -98,6 +102,18 @@ static Tensor get_named_constant(const string& name)
     cout << result << endl;
 #endif
 
+/*
+    for (int64_t i = 0;i < 540; i++) {
+      static std::vector<IVal> inputs;
+      inputs.clear();
+      inputs.push_back(torch::tensor(i,at::kLong));
+      Tensor result = m->forward(inputs).toTensor()[0];
+      constant_embeddings[name] = result;
+      
+      cout << "constant " << i << endl;
+      cout << result << endl;
+    }
+*/
     // cerr << "get_named_constant: " << result << endl;
     
     return result;
@@ -131,6 +147,7 @@ void torch_stack_const(const char* nm)
 bool torch_stack_term_or_negation(void* term, bool negated)
 {
   auto search = term_embedding_cache[negated].find(term);
+  
   if (search != term_embedding_cache[negated].end()) {
     assert(main_stack_top >= 0);
     main_stack[main_stack_top]->push_back(search->second);
@@ -158,7 +175,7 @@ static Model get_named_model(const string& name)
   if (search != named_model_cache.end()) {
     return search->second;
   } else {
-    Model m = torch::jit::load("models/str/"+name+".pt");
+    Model m = torch::jit::load("models2/str/"+name+".pt");
     named_model_cache[name] = m;
     return m;
   }
@@ -198,7 +215,7 @@ void torch_embed_and_cache_term(const char* sname, void* term)
   main_stack[main_stack_top]->push_back(result);
 }
 
-static Model model_negator = torch::jit::load("models/str/~.pt");
+static Model model_negator = torch::jit::load("models2/str/~.pt");
 
 void torch_embed_and_cache_term_negation(void* term)
 {
@@ -235,7 +252,7 @@ void torch_embed_and_cache_term_negation(void* term)
 
 void torch_embed_and_cache_equality(void* l, void* r)
 {
-  static Model m = torch::jit::load("models/str/=.pt");
+  static Model m = torch::jit::load("models2/str/=.pt");
 
  // fprintf(stdout,"FORWARD: =\n");
 
@@ -306,7 +323,7 @@ void torch_embed_clause(bool aside)
   // cerr << "torch_embed_clause " << main_stack_top << " " << main_stack[main_stack_top]->size() << endl;
 
   // load model (unless already there)
-  static Model m = torch::jit::load("models/clausenet.pt");
+  static Model m = torch::jit::load("models2/clausenet.pt");
 
   // compute a single clause embedding
   static std::vector<IVal> inputs;
@@ -339,7 +356,7 @@ void torch_embed_conjectures()
   // fprintf(stdout,"FORWARD: conjecturenet.pt\n");
   
   // load model (unless already there)
-  static Model m = torch::jit::load("models/conjecturenet.pt");
+  static Model m = torch::jit::load("models2/conjecturenet.pt");
 
   // compute a single conjecture embedding
   static std::vector<IVal> inputs;
@@ -363,7 +380,7 @@ float torch_eval_clause()
   // fprintf(stdout,"FORWARD: final.pt\n");
 
   // load model (unless already there)
-  static Model m = torch::jit::load("models/final.pt");
+  static Model m = torch::jit::load("models2/final.pt");
   
   static vector<IVal> inputs;
   inputs.clear();

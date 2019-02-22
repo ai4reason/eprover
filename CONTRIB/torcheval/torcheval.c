@@ -65,8 +65,11 @@ static void embed_equality(Term_p l, Term_p r, TB_p bank)
 
 static void embed_literals(Clause_p cl)
 {
+  int how_many = 0;
   for(Eqn_p lit = cl->literals; lit; lit = lit->next)
   {
+    how_many++;
+    
     bool negated = EqnIsNegative(lit);
     
     /*
@@ -76,7 +79,7 @@ static void embed_literals(Clause_p cl)
     */
     
     if (lit->rterm->f_code == SIG_TRUE_CODE) { // predicate symbol case:
-      if (0 /* TODO */ && negated) {
+      if (negated) {
         if (torch_stack_term_or_negation(lit->lterm,/* negated= */true)) {
           // fprintf(stdout,"CACHE: negated term of weight %ld\n",lit->lterm->weight);
           // found in cache
@@ -112,6 +115,10 @@ static void embed_literals(Clause_p cl)
         embed_equality(lit->lterm,lit->rterm,lit->bank);
       }
     }
+  }
+  // we parsed the empty clause
+  if (how_many == 0) {
+    torch_stack_const("$false");
   }
 }
 

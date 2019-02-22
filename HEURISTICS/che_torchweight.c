@@ -145,7 +145,7 @@ double TorchWeightCompute(void* data, Clause_p clause)
 
    res = clen * eval;
   
-   if (OutputLevel == 1) 
+   if (OutputLevel > 1) 
    {
       fprintf(GlobalOut, "=%.2f (torch,t=%.3fms,eval=%.3f,clen=%.1f): ", res, (double)(GetUSecClock() - start)/ 1000.0, eval, clen);
       ClausePrint(GlobalOut, clause, true);
