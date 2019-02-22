@@ -122,8 +122,10 @@ static void embed_literals(Clause_p cl)
   }
 }
 
-void te_init()
+void te_init(char* basename)
 {
+  torch_setbase(basename);
+
   // get ready to collecting clause embeddings
   torch_push();
 }

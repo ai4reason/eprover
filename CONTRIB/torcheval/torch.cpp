@@ -55,9 +55,16 @@ static unordered_map<void*,Tensor> term_embedding_cache[2];
 /* ... and there are two caches for non-negated and negated equations */
 static unordered_map<pair<void*,void*>,Tensor,pair_hasher<void*>> eqn_embedding_cache[2];
 
+string modeldir;
+
+void torch_setbase(const char* basename)
+{
+  modeldir = string("models/")+basename;
+}
+
 static unordered_map<string,long> load_constant_id_lookup()
 {
-  std::ifstream infile("models2/translate_const.txt");
+  std::ifstream infile(modeldir+"/translate_const.txt");
   
   unordered_map<string,long> result;
   
@@ -79,7 +86,7 @@ static Tensor get_named_constant(const string& name)
   if (search_name != constant_embeddings.end()) {
     return search_name->second;
   } else {
-    static Model m = torch::jit::load("models2/s_emb.pt");
+    static Model m = torch::jit::load(modeldir+"/s_emb.pt");
     
     auto search_id = constant_id_lookup.find(name);
     if (search_id == constant_id_lookup.end()) {
@@ -175,7 +182,7 @@ static Model get_named_model(const string& name)
   if (search != named_model_cache.end()) {
     return search->second;
   } else {
-    Model m = torch::jit::load("models2/str/"+name+".pt");
+    Model m = torch::jit::load(modeldir+"/str/"+name+".pt");
     named_model_cache[name] = m;
     return m;
   }
@@ -215,7 +222,10 @@ void torch_embed_and_cache_term(const char* sname, void* term)
   main_stack[main_stack_top]->push_back(result);
 }
 
-static Model model_negator = torch::jit::load("models2/str/~.pt");
+Model get_negator() {
+  static Model model_negator = torch::jit::load(modeldir+"/str/~.pt");
+  return model_negator;
+}
 
 void torch_embed_and_cache_term_negation(void* term)
 {
@@ -228,7 +238,7 @@ void torch_embed_and_cache_term_negation(void* term)
   inputs.clear();
   
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
-  Tensor result = model_negator->forward(inputs).toTensor();
+  Tensor result = get_negator()->forward(inputs).toTensor();
   
 #ifdef LOGGING
   cout << "negating " << endl;
@@ -252,7 +262,7 @@ void torch_embed_and_cache_term_negation(void* term)
 
 void torch_embed_and_cache_equality(void* l, void* r)
 {
-  static Model m = torch::jit::load("models2/str/=.pt");
+  static Model m = torch::jit::load(modeldir+"/str/=.pt");
 
  // fprintf(stdout,"FORWARD: =\n");
 
@@ -295,7 +305,7 @@ void torch_embed_and_cache_equality_negation(void* l, void* r)
   static std::vector<IVal> inputs;
   inputs.clear();
   inputs.push_back(torch::cat(*main_stack[main_stack_top],0));
-  Tensor result = model_negator->forward(inputs).toTensor();
+  Tensor result = get_negator()->forward(inputs).toTensor();
   
 #ifdef LOGGINGGING
   cout << "negating equality" << endl;
@@ -323,7 +333,7 @@ void torch_embed_clause(bool aside)
   // cerr << "torch_embed_clause " << main_stack_top << " " << main_stack[main_stack_top]->size() << endl;
 
   // load model (unless already there)
-  static Model m = torch::jit::load("models2/clausenet.pt");
+  static Model m = torch::jit::load(modeldir+"/clausenet.pt");
 
   // compute a single clause embedding
   static std::vector<IVal> inputs;
@@ -356,7 +366,7 @@ void torch_embed_conjectures()
   // fprintf(stdout,"FORWARD: conjecturenet.pt\n");
   
   // load model (unless already there)
-  static Model m = torch::jit::load("models2/conjecturenet.pt");
+  static Model m = torch::jit::load(modeldir+"/conjecturenet.pt");
 
   // compute a single conjecture embedding
   static std::vector<IVal> inputs;
@@ -380,7 +390,7 @@ float torch_eval_clause()
   // fprintf(stdout,"FORWARD: final.pt\n");
 
   // load model (unless already there)
-  static Model m = torch::jit::load("models2/final.pt");
+  static Model m = torch::jit::load(modeldir+"/final.pt");
   
   static vector<IVal> inputs;
   inputs.clear();

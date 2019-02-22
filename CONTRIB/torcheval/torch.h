@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+void torch_setbase(const char* basename);
+
 /* Go one step up in the stack, it will be empty there */
 void torch_push();
 /* Go one step down in the stack, promise to leave the current level empty */
