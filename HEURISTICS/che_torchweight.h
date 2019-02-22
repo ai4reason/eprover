@@ -38,6 +38,8 @@ typedef struct torchweightparamcell
    ProofState_p proofstate;
    
    bool inited;
+   char* filename;
+
    void   (*init_fun)(struct torchweightparamcell*);
 }TorchWeightParamCell, *TorchWeightParam_p;
 
@@ -62,7 +64,8 @@ WFCB_p TorchWeightParse(
 WFCB_p TorchWeightInit(
    ClausePrioFun prio_fun, 
    OCB_p ocb,
-   ProofState_p proofstate);
+   ProofState_p proofstate,
+   char* filename);
 
 double TorchWeightCompute(void* data, Clause_p clause);
 

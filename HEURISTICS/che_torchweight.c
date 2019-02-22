@@ -65,7 +65,7 @@ static void extweight_init(TorchWeightParam_p data)
    Clause_p clause;
    Clause_p anchor;
 
-   te_init();
+   te_init(data->filename);
 
    anchor = data->proofstate->axioms->anchor;
    for (clause=anchor->succ; clause!=anchor; clause=clause->succ)
@@ -104,18 +104,22 @@ WFCB_p TorchWeightParse(
 
    AcceptInpTok(in, OpenBracket);
    prio_fun = ParsePrioFun(in);
+   AcceptInpTok(in, Comma);
+   char* str = ParseFilename(in);
    AcceptInpTok(in, CloseBracket);
 
    return TorchWeightInit(
       prio_fun, 
       ocb,
-      state);
+      state,
+      str);
 }
 
 WFCB_p TorchWeightInit(
    ClausePrioFun prio_fun, 
    OCB_p ocb,
-   ProofState_p proofstate)
+   ProofState_p proofstate,
+   char* filename)
 {
    TorchWeightParam_p data = TorchWeightParamAlloc();
 
@@ -123,6 +127,7 @@ WFCB_p TorchWeightInit(
    data->ocb        = ocb;
    data->proofstate = proofstate;
    data->inited     = false;
+   data->filename   = filename;
    
    return WFCBAlloc(
       TorchWeightCompute, 
