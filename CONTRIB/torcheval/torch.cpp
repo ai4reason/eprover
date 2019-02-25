@@ -405,7 +405,7 @@ float torch_eval_clause()
   
   auto raw_data = output.data<float>();
   
-  return 1.0 / (1.0 + exp(raw_data[1]-raw_data[0]));
+  return raw_data[1]-raw_data[0];
 }
 
 
