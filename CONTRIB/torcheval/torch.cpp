@@ -21,6 +21,8 @@ using std::cerr;
 
 // #define LOGGING 1
 
+#define WITHCACHE 1
+
 template <class T>
 inline void hash_combine(size_t& seed, const T& v)
 {
@@ -81,11 +83,15 @@ static Tensor get_named_constant(const string& name)
 {
   static unordered_map<string,long> constant_id_lookup = load_constant_id_lookup();
   static unordered_map<string,Tensor> constant_embeddings;
-  
+
+#ifdef WITHCACHE
   auto search_name = constant_embeddings.find(name);
   if (search_name != constant_embeddings.end()) {
     return search_name->second;
-  } else {
+  }
+  else
+#endif
+  {
     static Model m = torch::jit::load(modeldir+"/s_emb.pt");
     
     auto search_id = constant_id_lookup.find(name);
@@ -102,8 +108,10 @@ static Tensor get_named_constant(const string& name)
     inputs.clear();
     inputs.push_back(torch::tensor((int64_t)search_id->second,at::kLong));
     Tensor result = m->forward(inputs).toTensor()[0];
+#ifdef WITHCACHE
     constant_embeddings[name] = result;
-    
+#endif
+
 #ifdef LOGGING
     cout << "constant " << name << endl;
     cout << result << endl;
@@ -153,24 +161,27 @@ void torch_stack_const(const char* nm)
 
 bool torch_stack_term_or_negation(void* term, bool negated)
 {
+#ifdef WITHCACHE
   auto search = term_embedding_cache[negated].find(term);
-  
   if (search != term_embedding_cache[negated].end()) {
     assert(main_stack_top >= 0);
     main_stack[main_stack_top]->push_back(search->second);
     return true;
   }
+#endif
   return false;
 }
 
 bool torch_stack_equality_or_negation(void* l, void* r, bool negated)
 {
+#ifdef WITHCACHE
   auto search = eqn_embedding_cache[negated].find(make_pair(l,r));
   if (search != eqn_embedding_cache[negated].end()) {
     assert(main_stack_top >= 0);
     main_stack[main_stack_top]->push_back(search->second);
     return true;
   }
+#endif
   return false;
 }
 
@@ -178,6 +189,7 @@ static Model get_named_model(const string& name)
 {
   static unordered_map<string,Model> named_model_cache;
   
+// WITHCACHE? Caching loaded models is a different concept to caching computed embeddings, so we keep this at all times
   auto search = named_model_cache.find(name);
   if (search != named_model_cache.end()) {
     return search->second;
@@ -208,8 +220,10 @@ void torch_embed_and_cache_term(const char* sname, void* term)
   cout << result << endl;
 #endif
 
+#ifdef WITHCACHE
   // cache
   term_embedding_cache[/*negated=*/false][term] = result;
+#endif
 
   // clean
   main_stack[main_stack_top]->clear();
@@ -246,9 +260,11 @@ void torch_embed_and_cache_term_negation(void* term)
   cout << result << endl;
 #endif
 
+#ifdef WITHCACHE
   // cache
   term_embedding_cache[/*negated=*/true][term] = result;
-  
+#endif
+
   // clean
   main_stack[main_stack_top]->clear();
   
@@ -281,8 +297,10 @@ void torch_embed_and_cache_equality(void* l, void* r)
   cout << result << endl;
 #endif
   
+#ifdef WITHCACHE
   // cache
   eqn_embedding_cache[/*negated=*/false][make_pair(l,r)] = result;
+#endif
   
   // clean
   main_stack[main_stack_top]->clear();
@@ -312,9 +330,11 @@ void torch_embed_and_cache_equality_negation(void* l, void* r)
   cout << inputs[0] << endl;
   cout << result << endl;
 #endif
-  
+
+#ifdef WITHCACHE
   // cache
   eqn_embedding_cache[/*negated=*/true][make_pair(l,r)] = result;
+#endif
   
   // clean
   main_stack[main_stack_top]->clear();
