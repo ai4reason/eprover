@@ -14,7 +14,7 @@ void te_conjecture_done();
  caching sub-term embeddings along the way */
 // returns "raw_data[1]-raw_data[0]"
 // this can be fed into sigmoid: 1.0 / (1.0 + exp(raw_data[1]-raw_data[0])) // less is better
-// or just compared against zero for a bool answer // <0 is YES
+// or just compared against zero for a bool answer // > 0 is YES
 float te_eval_clause(Clause_p t);
 
 #endif

@@ -148,7 +148,7 @@ double TorchWeightCompute(void* data, Clause_p clause)
    // double clen = ClauseWeight(clause,1,1,1,1,1,false);
    double eval = te_eval_clause(clause);
 
-   res = (eval < 0.0) ? 1.0 : 2.0;
+   res = (eval > 0.0) ? 1.0 : 2.0;
   
    if (OutputLevel > 1) 
    {
