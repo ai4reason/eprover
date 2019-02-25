@@ -365,8 +365,8 @@ void torch_embed_conjectures()
 {
   // fprintf(stdout,"FORWARD: conjecturenet.pt\n");
   
-  // load model (unless already there)
-  static Model m = torch::jit::load(modeldir+"/conjecturenet.pt");
+  // load model -- conjecture net used only once, so don't cache it
+  Model m = torch::jit::load(modeldir+"/conjecturenet.pt");
 
   // compute a single conjecture embedding
   static std::vector<IVal> inputs;
