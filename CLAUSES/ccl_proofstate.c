@@ -278,6 +278,7 @@ ProofState_p ProofStateAlloc(FunctionProperties free_symb_prop)
 
 void ProofStateLoadWatchlist(ProofState_p state,
                              char* watchlist_filename,
+                             char* watchlist_dirname,
                              IOFormat parse_format)
 {
    Scanner_p in;

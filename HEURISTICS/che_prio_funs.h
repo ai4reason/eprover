@@ -41,6 +41,12 @@ typedef EvalPriority (*ClausePrioFun)(Clause_p clause);
 
 extern char* PrioFunNames[];
 
+extern bool ProofWatchRecordsProgress;
+extern bool ProofWatchInheritsRelevance;
+extern double ProofWatchDecay;
+extern double ProofWatchAlpha;
+extern double ProofWatchBeta;
+
 ClausePrioFun GetPrioFun(char* name);
 ClausePrioFun ParsePrioFun(Scanner_p in);
 
@@ -74,6 +80,8 @@ EvalPriority PrioFunDeferNonUnitMaxPosEq(Clause_p clause);
 EvalPriority PrioFunByCreationDate(Clause_p clause);
 EvalPriority PrioFunPreferWatchlist(Clause_p clause);
 EvalPriority PrioFunDeferWatchlist(Clause_p clause);
+EvalPriority PrioFunPreferProofWatch(Clause_p clause);
+EvalPriority PrioFunDeferProofWatch(Clause_p clause);
 EvalPriority PrioFunByAppVarNum(Clause_p clause);
 
 

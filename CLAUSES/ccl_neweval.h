@@ -46,6 +46,9 @@ typedef long EvalPriority;
 #define PrioDefer   50
 #define PrioLargestReasonable MEGA
 
+#define PrioProofWatchPrec    10000  /* Multiplicator to translate 
+                                        watchlist relevance (0.0<r<1.0) to long */
+#define PrioProofWatchBase    (3*PrioProofWatchPrec)
 
 typedef struct simple_eval_cell
 {

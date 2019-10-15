@@ -125,6 +125,9 @@ Clause_p clause_copy_meta(Clause_p clause)
    handle->proof_size  = clause->proof_size;
    handle->pred        = NULL;
    handle->succ        = NULL;
+   handle->watch_proof       = clause->watch_proof;
+   handle->watch_relevance   = clause->watch_relevance;
+   handle->watch_proof_state = NumTreeCopy(clause->watch_proof_state);
 
    return handle;
 }
@@ -268,6 +271,9 @@ Clause_p EmptyClauseAlloc(void)
    handle->set         = NULL;
    handle->pred        = NULL;
    handle->succ        = NULL;
+   handle->watch_proof       = -1;
+   handle->watch_relevance   = 0.0;
+   handle->watch_proof_state = NULL;
 
    return handle;
 }
@@ -663,6 +669,10 @@ void ClauseFree(Clause_p junk)
    if(junk->feature_vec)
    {
       FixedDArrayFree(junk->feature_vec);
+   }
+   if(junk->watch_proof_state)
+   {
+      NumTreeFree(junk->watch_proof_state);
    }
    ClauseCellFree(junk);
 }

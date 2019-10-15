@@ -50,6 +50,7 @@ PERF_CTR_DEFINE(SatTimer);
 
 char              *outname = NULL;
 char              *watchlist_filename = NULL;
+char              *watchlist_dirname = NULL;
 HeuristicParms_p  h_parms;
 FVIndexParms_p    fvi_parms;
 bool              print_sat = false,
@@ -473,7 +474,10 @@ int main(int argc, char* argv[])
    }
 
    raw_clause_no = proofstate->axioms->members;
-   ProofStateLoadWatchlist(proofstate, watchlist_filename, parse_format);
+   ProofStateLoadWatchlist(proofstate,
+                           watchlist_filename,
+                           watchlist_dirname,
+                           parse_format);
 
    if(!no_preproc)
    {
@@ -909,6 +913,10 @@ CLState_p process_options(int argc, char* argv[])
             ProofObjectRecordsGCSelection = true;
             proc_training_data = CLStateGetIntArg(handle, arg);
             break;
+      case OPT_TRAINING_PROOFWATCH:
+            PrintProofObject = MAX(1, PrintProofObject);
+            ProofObjectRecordsGCSelection = true;
+			   ProofWatchRecordsProgress = true;
       case OPT_PCL_COMPRESSED:
             pcl_full_terms = false;
             break;
@@ -1506,6 +1514,21 @@ CLState_p process_options(int argc, char* argv[])
             break;
       case OPT_WATCHLIST_NO_SIMPLIFY:
             h_parms->watchlist_simplify = false;
+            break;
+      case OPT_WATCHLIST_DIR:
+            watchlist_dirname = arg;
+            break;
+      case OPT_PROOFWATCH_INHERIT_RELEVANCE:
+            ProofWatchInheritsRelevance = true;
+            break;
+      case OPT_PROOFWATCH_DECAY:
+            ProofWatchDecay = CLStateGetFloatArg(handle, arg);
+            break;
+      case OPT_PROOFWATCH_ALPHA:
+            ProofWatchAlpha = CLStateGetFloatArg(handle, arg);
+            break;
+      case OPT_PROOFWATCH_BETA:
+            ProofWatchBeta = CLStateGetFloatArg(handle, arg);
             break;
       case OPT_NO_INDEXED_SUBSUMPTION:
             fvi_parms->cspec.features = FVINoFeatures;

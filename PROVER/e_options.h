@@ -56,6 +56,7 @@ typedef enum
    OPT_FORCE_DERIV,
    OPT_RECORD_GIVEN_CLAUSES,
    OPT_TRAINING,
+   OPT_TRAINING_PROOFWATCH,
    OPT_PCL_COMPRESSED,
    OPT_PCL_COMPACT,
    OPT_PCL_SHELL_LEVEL,
@@ -156,6 +157,11 @@ typedef enum
    OPT_WATCHLIST,
    OPT_STATIC_WATCHLIST,
    OPT_WATCHLIST_NO_SIMPLIFY,
+   OPT_WATCHLIST_DIR,
+   OPT_PROOFWATCH_INHERIT_RELEVANCE,
+   OPT_PROOFWATCH_DECAY,
+   OPT_PROOFWATCH_ALPHA,
+   OPT_PROOFWATCH_BETA,
    OPT_NO_INDEXED_SUBSUMPTION,
    OPT_FVINDEX_STYLE,
    OPT_FVINDEX_FEATURETYPES,
@@ -288,6 +294,13 @@ OptCell opts[] =
     " Implies --record-gcs. The argument is a binary or of the desired "
     "processig. Bit zero prints positive exampels. Bit 1 prints negative "
     "examples. Additional selectors will be added later."},
+
+   {OPT_TRAINING_PROOFWATCH,
+	  '\0', "training-proofwatch",
+    NoArg, NULL,
+    "Record proof-state vector from watchlists for each given clause. "
+	 "Use with --watchlist-dir. No watchlist strategies are needed. "
+    "Will be printed with training examples (if the option is set)."},
 
    {OPT_PCL_COMPRESSED,
     '\0', "pcl-terms-compressed",
@@ -1185,6 +1198,42 @@ OptCell opts[] =
     "By default, the watchlist is brought into normal form with respect "
     "to the current processed clause set and certain simplifications. "
     "This option disables simplification for the watchlist."},
+   
+   {OPT_WATCHLIST_DIR,
+    '\0', "watchlist-dir",
+    ReqArg, NULL,
+    "Read watchlists from a directory instead of a single file. Only "
+    "regular files inside the directory are considered (no recursive "
+    "search). Can not be used together with --watchlist."},
+
+   {OPT_PROOFWATCH_INHERIT_RELEVANCE,
+    '\0', "proofwatch-inherit-relevance",
+    NoArg, NULL,
+    "By default, clauses matching a watchlist do not inherit relevance "
+    "from their parents. This option sets the clause priority to "
+    "(relevance + decay_factor * parents_relevance) when using "
+    "PreferProofWatch priority function. The default decay factor is 0.1."},
+   
+   {OPT_PROOFWATCH_DECAY,
+    '\0', "proofwatch-decay",
+    ReqArg, NULL,
+    "Set the watchlist inherited relevance decay factor. "
+    "This is the delta parameter from the ProofWatch paper. "
+    "The default value is 0.1."},
+
+   {OPT_PROOFWATCH_ALPHA,
+    '\0', "proofwatch-alpha",
+    ReqArg, NULL,
+    "Set a treshhold on the watchlist relevance of a clause. "
+    "This is the alpha parameter from the ProofWatch paper. "
+    "The default value is 0.03."},
+
+   {OPT_PROOFWATCH_BETA,
+    '\0', "proofwatch-beta",
+    ReqArg, NULL,
+    "Set a treshhold on the ratio of the clause relevance and of the "
+    "clause length. This is the beta parameter from the ProofWatch paper. "
+    "The default value is 0.009."},
 
    {OPT_NO_INDEXED_SUBSUMPTION,
     '\0', "conventional-subsumption",

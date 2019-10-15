@@ -141,6 +141,7 @@ typedef enum
 ProofState_p ProofStateAlloc(FunctionProperties free_symb_prop);
 void         ProofStateLoadWatchlist(ProofState_p state,
                                      char* watchlist_filename,
+                                     char* watchlist_dirname,
                                      IOFormat parse_format);
 
 
@@ -190,6 +191,12 @@ void ProofStatePropDocQuote(FILE* out, int level,
 #define WATCHLIST_INLINE_STRING "Use inline watchlist type"
 #define WATCHLIST_INLINE_QSTRING "'" WATCHLIST_INLINE_STRING "'"
 extern char* UseInlinedWatchList;
+
+extern bool ProofWatchRecordsProgress;
+extern bool ProofWatchInheritsRelevance;
+extern double ProofWatchDecay;
+extern double ProofWatchAlpha;
+extern double ProofWatchBeta;
 
 void ProofStateResetSATSolver(ProofState_p state);
 

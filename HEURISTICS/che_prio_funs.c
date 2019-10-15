@@ -62,6 +62,8 @@ char* PrioFunNames[]=
    "ByCreationDate",
    "PreferWatchlist",
    "DeferWatchlist",
+   "PreferProofWatch",
+   "DeferProofWatch",
    "PreferAppVar",
    "PreferNonAppVar",
    "ByAppVarNum",
@@ -100,12 +102,19 @@ static ClausePrioFun prio_fun_array[]=
    PrioFunByCreationDate,
    PrioFunPreferWatchlist,
    PrioFunDeferWatchlist,
+   PrioFunPreferProofWatch,
+   PrioFunDeferProofWatch,
    PrioFunPreferAppVar,
    PrioFunPreferNonAppVar,
    PrioFunByAppVarNum,
    NULL
 };
 
+bool ProofWatchRecordsProgress = false;
+bool ProofWatchInheritsRelevance = false;
+double ProofWatchDecay = 0.1;
+double ProofWatchAlpha = 0.03;
+double ProofWatchBeta = 0.009;
 
 /*---------------------------------------------------------------------*/
 /*                      Forward Declarations                           */
@@ -965,6 +974,67 @@ EvalPriority PrioFunDeferWatchlist(Clause_p clause)
       return PrioDefer;
    }
    return PrioNormal;
+}
+
+/*-----------------------------------------------------------------------
+//
+// Function: PrioFunPreferProofWatch()
+//
+//   Prefer watchlist-matchers of the most completed proofs.  This 
+//   implements selection from ProofWatch watchlist guidance paper:
+//
+//   Zarathustra Goertzel, Jan Jakubuv, Stephan Schulz, Josef Urban:
+//   ProofWatch: Watchlist Guidance for Large Theories in E. 
+//   ITP 2018: 270-288, https://doi.org/10.1007/978-3-319-94821-8\_16.
+//
+// Global Variables: -
+//
+// Side Effects    : -
+//
+/----------------------------------------------------------------------*/
+
+EvalPriority PrioFunPreferProofWatch(Clause_p clause)
+{
+   assert(clause);
+
+   double wl = clause->watch_relevance;
+
+   if ((wl < ProofWatchAlpha) && ((wl/clause->weight) < ProofWatchBeta))  
+   { 
+      wl = 0; 
+   };
+
+   EvalPriority prio = PrioProofWatchBase - (long)(PrioProofWatchPrec * wl); 
+
+#ifdef DEBUG_PROOF_WATCH
+   fprintf(GlobalOut, "# PROOFWATCH PRIO: prio=%ld; weight=%ld; clause=", prio, clause->weight);
+   ClausePrint(GlobalOut, clause, true);
+   fprintf(GlobalOut, "\n");
+#endif
+
+   return prio;
+}
+
+/*-----------------------------------------------------------------------
+//
+// Function: PrioFunDeferProofWatch()
+//
+//   An inverse version of PreferProofWatch (probably useful only for 
+//   symmetry reasons).
+//
+// Global Variables: -
+//
+// Side Effects    : -
+//
+/----------------------------------------------------------------------*/
+
+EvalPriority PrioFunDeferProofWatch(Clause_p clause)
+{
+   assert(clause);
+
+   EvalPriority prio = PrioFunPreferProofWatch(clause);
+
+   return (PrioProofWatchBase + (PrioProofWatchBase - prio));
 }
 
 /*-----------------------------------------------------------------------
