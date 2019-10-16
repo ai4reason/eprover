@@ -24,7 +24,8 @@ the paper [1] using `--proofwatch-decay`, `--proofwatch-alpha`, and/or,
 ### Training Vectors
 
 To output ProofWatch proof progress with training examples (for example, to be
-used with ENIGMAWatch) use `--training-proofwatch`.
+used with ENIGMAWatch) use `--training-proofwatch` together with
+`--training-examples=3`.
 
 ### Analyse and Debug
 
