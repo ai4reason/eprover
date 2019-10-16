@@ -31,7 +31,7 @@ used with ENIGMAWatch) use `--training-proofwatch`.
 To output the ProofWatch proof progress whenever a watchlist clause is matched,
 use `-l1`.
 
-To see the relevance values and further debug, compile with DEBUG_PROOF_WATCH.
+To see the relevance values and further debug, compile with `DEBUG_PROOF_WATCH`.
 
 ## Credits
 
