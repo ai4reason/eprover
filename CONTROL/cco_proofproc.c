@@ -22,6 +22,7 @@ Changes
 -----------------------------------------------------------------------*/
 
 #include "cco_proofproc.h"
+#include "ccl_proofwatch.h"
 #include <picosat.h>
 
 
@@ -120,11 +121,13 @@ static void check_ac_status(ProofState_p state, ProofControl_p
 static long remove_subsumed(GlobalIndices_p indices,
                             FVPackedClause_p subsumer,
                             ClauseSet_p set,
-                            ClauseSet_p archive)
+                            ClauseSet_p archive,
+                            NumTree_p* watch_progress)
 {
    Clause_p handle;
    long     res;
    PStack_p stack = PStackAlloc();
+   double best_progress = 0.0;
 
    res = ClauseSetFindFVSubsumedClauses(set, subsumer, stack);
 
@@ -137,6 +140,7 @@ static long remove_subsumed(GlobalIndices_p indices,
          DocClauseQuote(GlobalOut, OutputLevel, 6, handle,
                         "extract_wl_subsumed", subsumer->clause);
 
+         ProofWatchSetProofNumber(watch_progress, subsumer->clause, handle, &best_progress);
       }
       else
       {
@@ -149,6 +153,12 @@ static long remove_subsumed(GlobalIndices_p indices,
       ClauseSetInsert(archive, handle);
    }
    PStackFree(stack);
+   
+   if (watch_progress)
+   {
+      ProofWatchSetRelevance(watch_progress, subsumer->clause);
+   }
+
    return res;
 }
 
@@ -261,30 +271,30 @@ static long eliminate_backward_subsumed_clauses(ProofState_p state,
          {
             res += remove_subsumed(&(state->gindices), pclause,
                                    state->processed_pos_rules,
-                                   state->archive);
+                                   state->archive, NULL);
             res += remove_subsumed(&(state->gindices), pclause,
                                    state->processed_pos_eqns,
-                                   state->archive);
+                                   state->archive, NULL);
          }
          res += remove_subsumed(&(state->gindices), pclause,
                                 state->processed_non_units,
-                                state->archive);
+                                state->archive, NULL);
       }
       else
       {
          res += remove_subsumed(&(state->gindices), pclause,
                                 state->processed_neg_units,
-                                state->archive);
+                                state->archive, NULL);
          res += remove_subsumed(&(state->gindices), pclause,
                                 state->processed_non_units,
-                                state->archive);
+                                state->archive, NULL);
       }
    }
    else
    {
       res += remove_subsumed(&(state->gindices), pclause,
                              state->processed_non_units,
-                             state->archive);
+                             state->archive, NULL);
    }
    state->backward_subsumed_count+=res;
    return res;
@@ -380,7 +390,7 @@ static long eliminate_context_sr_clauses(ProofState_p state,
 
 void check_watchlist(GlobalIndices_p indices, ClauseSet_p watchlist,
                      Clause_p clause, ClauseSet_p archive,
-                     bool static_watchlist)
+                     bool static_watchlist, NumTree_p* watch_progress)
 {
    FVPackedClause_p pclause;
    long removed;
@@ -406,13 +416,17 @@ void check_watchlist(GlobalIndices_p indices, ClauseSet_p watchlist,
       }
       else
       {
-         if((removed = remove_subsumed(indices, pclause, watchlist, archive)))
+         if((removed = remove_subsumed(indices, pclause, watchlist, archive, watch_progress)))
          {
             ClauseSetProp(clause, CPSubsumesWatch);
             if(OutputLevel == 1)
             {
                fprintf(GlobalOut,"# Watchlist reduced by %ld clause%s\n",
                        removed,removed==1?"":"s");
+               if (*watch_progress)
+               {
+                  ProofWatchPrintProgress(GlobalOut, *watch_progress);
+               }
             }
             // ClausePrint(GlobalOut, clause, true); printf("\n");
             DocClauseQuote(GlobalOut, OutputLevel, 6, clause,
@@ -661,7 +675,8 @@ static Clause_p insert_new_clauses(ProofState_p state, ProofControl_p control)
       }
       check_watchlist(&(state->wlindices), state->watchlist,
                       handle, state->archive,
-                      control->heuristic_parms.watchlist_is_static);
+                      control->heuristic_parms.watchlist_is_static,
+                      &(state->watch_progress));
       if(ClauseIsEmpty(handle))
       {
          return handle;
@@ -1368,7 +1383,8 @@ void ProofStateInit(ProofState_p state, ProofControl_p control)
       ClauseSetProp(new, CPInitial);
       check_watchlist(&(state->wlindices), state->watchlist,
                       new, state->archive,
-                      control->heuristic_parms.watchlist_is_static);
+                      control->heuristic_parms.watchlist_is_static,
+                      &(state->watch_progress));
       HCBClauseEvaluate(control->hcb, new);
       DocClauseQuoteDefault(6, new, "eval");
       ClausePushDerivation(new, DCCnfQuote, handle, NULL);
@@ -1458,6 +1474,12 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
 
    if(ProofObjectRecordsGCSelection)
    {
+      if (ProofWatchRecordsProgress)
+      {
+         // Copy proof state at given clause selection into the clause.
+         // Notably this is different from the proof-state immediately after clause selection.
+         clause->watch_proof_state = NumTreeCopy(state->watch_progress);
+      }
       arch_copy = ClauseArchiveCopy(state->archive, clause);
    }
 
@@ -1505,7 +1527,8 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
 
    check_watchlist(&(state->wlindices), state->watchlist,
                       pclause->clause, state->archive,
-                      control->heuristic_parms.watchlist_is_static);
+                      control->heuristic_parms.watchlist_is_static,
+                      &(state->watch_progress));
 
    /* Now on to backward simplification. */
    clausedate = ClauseSetListGetMaxDate(state->demods, FullRewrite);

@@ -24,6 +24,7 @@ Changes
 -----------------------------------------------------------------------*/
 
 #include "che_prio_funs.h"
+#include "ccl_proofwatch.h"
 
 
 /*---------------------------------------------------------------------*/
@@ -109,12 +110,6 @@ static ClausePrioFun prio_fun_array[]=
    PrioFunByAppVarNum,
    NULL
 };
-
-bool ProofWatchRecordsProgress = false;
-bool ProofWatchInheritsRelevance = false;
-double ProofWatchDecay = 0.1;
-double ProofWatchAlpha = 0.03;
-double ProofWatchBeta = 0.009;
 
 /*---------------------------------------------------------------------*/
 /*                      Forward Declarations                           */
@@ -998,8 +993,9 @@ EvalPriority PrioFunPreferProofWatch(Clause_p clause)
    assert(clause);
 
    double wl = clause->watch_relevance;
+   long weight = (long)ClauseWeight(clause, 1,1,1,1,1,1,false);
 
-   if ((wl < ProofWatchAlpha) && ((wl/clause->weight) < ProofWatchBeta))  
+   if ((wl < ProofWatchAlpha) && ((wl/weight) < ProofWatchBeta))  
    { 
       wl = 0; 
    };
@@ -1007,7 +1003,7 @@ EvalPriority PrioFunPreferProofWatch(Clause_p clause)
    EvalPriority prio = PrioProofWatchBase - (long)(PrioProofWatchPrec * wl); 
 
 #ifdef DEBUG_PROOF_WATCH
-   fprintf(GlobalOut, "# PROOFWATCH PRIO: prio=%ld; weight=%ld; clause=", prio, clause->weight);
+   fprintf(GlobalOut, "# PROOFWATCH PRIORITY: prio=%ld; weight=%ld; clause=", prio, weight);
    ClausePrint(GlobalOut, clause, true);
    fprintf(GlobalOut, "\n");
 #endif

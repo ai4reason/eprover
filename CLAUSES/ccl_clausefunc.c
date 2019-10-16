@@ -22,6 +22,7 @@
 
 
 #include "ccl_clausefunc.h"
+#include "ccl_proofwatch.h"
 
 
 /*---------------------------------------------------------------------*/
@@ -581,6 +582,10 @@ void PStackClausePrint(FILE* out, PStack_p stack, char* extra)
       if(extra)
       {
          fprintf(out, "%s", extra);
+      }
+      if(ProofWatchRecordsProgress)
+      {  
+         ProofWatchPrintClauseState(out, clause);
       }
       fputc('\n', out);
    }

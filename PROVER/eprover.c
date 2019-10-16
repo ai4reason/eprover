@@ -31,6 +31,7 @@
 #include <cte_simpletypes.h>
 #include <cco_scheduling.h>
 #include <e_version.h>
+#include <ccl_proofwatch.h>
 
 
 /*---------------------------------------------------------------------*/

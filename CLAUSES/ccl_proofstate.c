@@ -19,8 +19,11 @@
 -----------------------------------------------------------------------*/
 
 #include "ccl_proofstate.h"
+#include "ccl_proofwatch.h"
 #include <picosat.h>
-
+#include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 
 /*---------------------------------------------------------------------*/
@@ -114,7 +117,135 @@ static void clause_set_pick_training_examples(ClauseSet_p set,
    }
 }
 
+/*-----------------------------------------------------------------------
+//
+// Function: filename_compare()
+//
+//   Wrapper to compare filenames in a stack of DStr_p's.
+//
+// Global Variables: -
+//
+// Side Effects    : -
+//
+/----------------------------------------------------------------------*/
 
+static int filename_compare(IntOrP* left, IntOrP* right)
+{
+   return strcmp(DStrView((DStr_p)(left->p_val)), DStrView((DStr_p)(right->p_val)));
+}
+
+/*-----------------------------------------------------------------------
+//
+// Function: watchlist_load_file()
+//
+//   Load the watchlist from a single file into a clause set.
+//
+// Global Variables: -
+//
+// Side Effects    : IO, memory ops, extends watchlist.
+//
+/----------------------------------------------------------------------*/
+
+static void watchlist_load_file(ProofState_p state,
+                                char* watchlist_filename,
+                                ClauseSet_p watchlist,
+                                IOFormat parse_format)
+{
+   Scanner_p in;
+   in = CreateScanner(StreamTypeFile, watchlist_filename, true, NULL, true);
+   ScannerSetFormat(in, parse_format);
+   ClauseSetParseList(in, watchlist, state->terms);
+   CheckInpTok(in, NoToken);
+   DestroyScanner(in);
+}
+
+/*-----------------------------------------------------------------------
+//
+// Function: watchlist_load_dir()
+//
+//   Load the watchlists from a watchlist directory into state->watchlist.
+//
+// Global Variables: -
+//
+// Side Effects    : IO, memory ops, extends state->watchlist.
+//
+/----------------------------------------------------------------------*/
+
+static void watchlist_load_dir(ProofState_p state,
+                               char* watchlist_dir,
+                               IOFormat parse_format)
+{
+   DIR *dp;
+   struct dirent *ep;
+   ClauseSet_p tmpset;
+   DStr_p filename;
+   Clause_p handle;
+   IntOrP val1, val2;
+   long proof_no = 0;
+
+   if (!watchlist_dir)
+   {
+      return;
+   }
+
+   dp = opendir(watchlist_dir);
+   if (!dp)
+   {  
+      Error("Can't access watchlist dir '%s'", OTHER_ERROR, watchlist_dir);
+      return;
+   }
+
+   PStack_p filenames = PStackAlloc();
+   while ((ep = readdir(dp)) != NULL)
+   {
+      if (ep->d_type == DT_DIR)
+      {
+         continue;
+      }
+
+      filename = DStrAlloc();
+      DStrAppendStr(filename, watchlist_dir);
+      DStrAppendChar(filename, '/');
+      DStrAppendStr(filename, ep->d_name);
+
+      PStackPushP(filenames, filename);
+   }
+   closedir(dp);
+   PStackSort(filenames, (ComparisonFunctionType)filename_compare);
+
+   for (proof_no=0; proof_no<filenames->current; proof_no++)
+   {
+      filename = filenames->stack[proof_no].p_val;
+
+      tmpset = ClauseSetAlloc();
+      watchlist_load_file(state, DStrView(filename), tmpset, parse_format);
+
+      // set origin proof number
+      for(handle = tmpset->anchor->succ; 
+          handle != tmpset->anchor; 
+          handle = handle->succ)
+      {
+         handle->watch_proof = proof_no+1; // count watchlists from 1
+      }
+
+      // initialize watchlist proof progress
+      val1.i_val = 0; // "val1" matched so far ...
+      val2.i_val = tmpset->members; // ... out of "val2" total
+      NumTreeStore(&state->watch_progress, proof_no+1, val1, val2);
+      
+      if (OutputLevel >= 1)
+      {
+         fprintf(GlobalOut, "#   watchlist %4ld: %8ld clauses from '%s'\n", 
+            proof_no+1, tmpset->members, DStrView(filename));
+      }
+
+      ClauseSetInsertSet(state->watchlist, tmpset);
+      ClauseSetFree(tmpset);
+      DStrFree(filename);
+   }
+
+   PStackFree(filenames);
+}
 
 
 
@@ -240,6 +371,7 @@ ProofState_p ProofStateAlloc(FunctionProperties free_symb_prop)
 
    handle->signature->distinct_props =
       handle->signature->distinct_props&(~free_symb_prop);
+   handle->watch_progress = NULL;
 
 #ifdef NEVER_DEFINED
    printf("# XXXf_axioms            = %p\n", handle->f_axioms);
@@ -281,37 +413,54 @@ void ProofStateLoadWatchlist(ProofState_p state,
                              char* watchlist_dirname,
                              IOFormat parse_format)
 {
-   Scanner_p in;
-
    assert(state->watchlist);
 
-   if(watchlist_filename)
+   if (watchlist_filename && watchlist_dirname)
    {
-      if(watchlist_filename!=UseInlinedWatchList)
-      {
-         in = CreateScanner(StreamTypeFile, watchlist_filename, true, NULL, true);
-         ScannerSetFormat(in, parse_format);
-         ClauseSetParseList(in, state->watchlist,
-                            state->terms);
-         CheckInpTok(in, NoToken);
-         DestroyScanner(in);
-      }
-      ClauseSetSetTPTPType(state->watchlist, CPTypeWatchClause);
-      ClauseSetSetProp(state->watchlist, CPWatchOnly);
-      ClauseSetDefaultWeighClauses(state->watchlist);
-      ClauseSetSortLiterals(state->watchlist, EqnSubsumeInverseCompareRef);
-      ClauseSetDocInital(GlobalOut, OutputLevel, state->watchlist);
+      Error("Options --watchlist and --watchlist-dir can not be used together.",
+         USAGE_ERROR);
    }
-   else if(!watchlist_filename)
+
+   if (watchlist_dirname)
+   {
+      if (OutputLevel >= 1)
+      {
+         fprintf(GlobalOut, "# Loading directory watchlist from '%s'\n", 
+            watchlist_dirname);
+      }
+      watchlist_load_dir(state, watchlist_dirname, parse_format);
+   }
+   else if (watchlist_filename)
+   {
+      if (OutputLevel >= 1)
+      {
+         fprintf(GlobalOut, "# Loading file watchlist from '%s'\n", 
+            watchlist_filename);
+      }
+      if (watchlist_filename != UseInlinedWatchList) 
+      {
+         watchlist_load_file(state, watchlist_filename, state->watchlist, 
+                             parse_format);
+      }
+   }
+   else
    {
       GCDeregisterClauseSet(state->gc_terms, state->watchlist);
       ClauseSetFree(state->watchlist);
       state->watchlist = NULL;
+      if (OutputLevel >= 1)
+      {
+         fprintf(GlobalOut, "# Watchlist not in use\n");
+      }
+      return;
    }
+      
+   ClauseSetSetTPTPType(state->watchlist, CPTypeWatchClause);
+   ClauseSetSetProp(state->watchlist, CPWatchOnly);
+   ClauseSetDefaultWeighClauses(state->watchlist);
+	ClauseSetSortLiterals(state->watchlist, EqnSubsumeInverseCompareRef);
+   ClauseSetDocInital(GlobalOut, OutputLevel, state->watchlist);
 }
-
-
-
 
 /*-----------------------------------------------------------------------
 //
@@ -448,6 +597,7 @@ void ProofStateFree(ProofState_p junk)
    TBFree(junk->tmp_terms);
    VarBankFree(junk->freshvars);
    TypeBankFree(junk->type_bank);
+   NumTreeFree(junk->watch_progress);
 
    ProofStateCellFree(junk);
 }
@@ -560,6 +710,7 @@ void ProofStateTrain(ProofState_p state, bool print_pos, bool print_neg)
    PStack_p
       pos_examples = PStackAlloc(),
       neg_examples = PStackAlloc();
+   char* extra;
 
    ProofStatePickTrainingExamples(state, pos_examples, neg_examples);
 
@@ -568,13 +719,15 @@ void ProofStateTrain(ProofState_p state, bool print_pos, bool print_neg)
    if(print_pos)
    {
       fprintf(GlobalOut, "# Training: Positive examples begin\n");
-      PStackClausePrint(GlobalOut, pos_examples, "# trainpos");
+      extra = ProofWatchRecordsProgress ? "# trainpos # proofwatch " : "# trainpos";
+      PStackClausePrint(GlobalOut, pos_examples, extra);
       fprintf(GlobalOut, "# Training: Positive examples end\n");
    }
    if(print_neg)
    {
       fprintf(GlobalOut, "# Training: Negative examples begin\n");
-      PStackClausePrint(GlobalOut, neg_examples, "#trainneg");
+      extra = ProofWatchRecordsProgress ? "# trainneg # proofwatch " : "# trainneg";
+      PStackClausePrint(GlobalOut, neg_examples, extra);
       fprintf(GlobalOut, "# Training: Negative examples end\n");
    }
 

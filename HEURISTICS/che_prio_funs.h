@@ -34,18 +34,14 @@ Changes
 
 typedef EvalPriority (*ClausePrioFun)(Clause_p clause);
 
+//#define DEBUG_PROOF_WATCH
+
 
 /*---------------------------------------------------------------------*/
 /*                Exported Functions and Variables                     */
 /*---------------------------------------------------------------------*/
 
 extern char* PrioFunNames[];
-
-extern bool ProofWatchRecordsProgress;
-extern bool ProofWatchInheritsRelevance;
-extern double ProofWatchDecay;
-extern double ProofWatchAlpha;
-extern double ProofWatchBeta;
 
 ClausePrioFun GetPrioFun(char* name);
 ClausePrioFun ParsePrioFun(Scanner_p in);

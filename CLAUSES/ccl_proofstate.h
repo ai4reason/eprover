@@ -118,6 +118,8 @@ typedef struct proofstatecell
       DerivationCompute() at the end of the proof search. */
    unsigned long gc_count;
    unsigned long gc_used_count;
+
+   NumTree_p     watch_progress;
 }ProofStateCell, *ProofState_p;
 
 typedef enum
@@ -191,12 +193,6 @@ void ProofStatePropDocQuote(FILE* out, int level,
 #define WATCHLIST_INLINE_STRING "Use inline watchlist type"
 #define WATCHLIST_INLINE_QSTRING "'" WATCHLIST_INLINE_STRING "'"
 extern char* UseInlinedWatchList;
-
-extern bool ProofWatchRecordsProgress;
-extern bool ProofWatchInheritsRelevance;
-extern double ProofWatchDecay;
-extern double ProofWatchAlpha;
-extern double ProofWatchBeta;
 
 void ProofStateResetSATSolver(ProofState_p state);
 
