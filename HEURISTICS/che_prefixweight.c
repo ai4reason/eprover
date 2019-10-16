@@ -264,11 +264,11 @@ void PrefixWeightParamFree(PrefixWeightParam_p junk)
    {
       PDTreeFree(junk->terms);
       junk->terms = NULL;
-   }
-   if (junk->vars) 
-   {
-      VarBankFree(junk->vars);
-      junk->vars = NULL;
+      if (junk->vars) 
+      {
+         VarBankFree(junk->vars);
+         junk->vars = NULL;
+      }
    }
    PrefixWeightParamCellFree(junk);
 }

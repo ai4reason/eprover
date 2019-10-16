@@ -1474,11 +1474,14 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
 
    if(ProofObjectRecordsGCSelection)
    {
-      if (ProofWatchRecordsProgress)
+      if(ProofWatchRecordsProgress)
       {
          // Copy proof state at given clause selection into the clause.
          // Notably this is different from the proof-state immediately after clause selection.
-         clause->watch_proof_state = NumTreeCopy(state->watch_progress);
+         if (!clause->watch_proof_state)
+         {
+            clause->watch_proof_state = NumTreeCopy(state->watch_progress);
+         }
       }
       arch_copy = ClauseArchiveCopy(state->archive, clause);
    }
