@@ -1527,6 +1527,59 @@ Options controlling the use of the watch list:\\
   \texttt{P}. Use this option to disable the feature.
 \end{tabular}
 
+\subsection{ProofWatch: Guidance for Large Theories}
+
+The ProofWatch feature implements the method for watchlist guidance in large
+theories introduced in ITP 2019 paper~\cite{ProofWatch:ITP-2018}.
+The basic idea is to load watchlist clauses from diferent watchlists
+$W_1$,\ldots,$W_n$ instead of a single watchlist file.
+The different watchlist can constitute, for example, a previously found proofs
+of conjectures related to the conjecture one is currently trying to proof.
+During the proof search, we keep track of how many clauses $M_i$ were matched
+from watchlist $W_i$ (for every $i$).
+This gives us the ProofWatch proof completion ratio $W_i/M_i$ for every
+watchlist $W_i$.
+The higher the completion ratio, the more the current proof search resembles
+the corresponding watchlist.
+The core idea of ProofWatch is to guide the given clause selection so that the
+clauses matching more complete watchlists are prefered.
+See~\cite{ProofWatch:ITP-2018} for more information.
+
+The ProofWatch method is implemented using the \texttt{PreferProofWatch} and
+\texttt{DeferProofWatch} priority functions (see~\ref{sec:options:heuristics}.).
+Use \texttt{--watchlist-dir} to load multiple watchlists from a directory and
+use a custom heuristic that uses a ProofWatch priority function.
+The minimal usage example is as follows, provided directory \texttt{watchlists}
+contains different watchlists.
+
+\begin{verbatim}
+eprover -H'(1*Clauseweight(PreferProofWatch,1,1,1))'  
+        --watchlist-dir=watchlists agatha.p
+\end{verbatim}
+
+Options controlling the use of ProofWatch are as follows.\\
+\begin{tabular}{lp{5.8cm}}
+  \texttt{--watchlist-dir=<arg>} & 
+  Load multiple watchlists from the directory \texttt{<arg>}.
+  Each regular file in the directory is considered to be a separate
+  watchlist (no recursive search is done).
+  With this option, ProofWatch completion ratios are computed and maintained during the proof search. \\
+  \texttt{--proofwatch-inherit-relevance} & Turn on ProofWatch inherited relevance~\cite[Section~5.3]{ProofWatch:ITP-2018}.
+  With this, clauses not matching any watchlist can get preferred when they have watchlist-matching ancestor(s).  \\
+  \texttt{--proofwatch-decay=<arg>} & 
+  Set parameter $\delta$ of ProofWatch inherited relevance.
+  This influences the importance of parent relevancies.
+  The default value is 0.1. \\
+  \texttt{--proofwatch-alpha=<arg>} & 
+  Set parameter $\alpha$ of ProofWatch inherited relevance.
+  The default is 0.03. \\
+  \texttt{--proofwatch-beta=<arg>} & 
+  Set parameter $\beta$ of ProofWatch inherited relevance.
+  The default is 0.009. \\
+  \texttt{--training-proofwatch} & 
+   Output ProofWatch proof completion ratios with training examples.  
+   Use together with \texttt{--training-examples=3}.\\
+\end{tabular}
 
 \section{Learning Clause Evaluation Functions}
 \label{sec:options:learning}
@@ -2820,6 +2873,15 @@ C.~Weidenbach, B.~Gaede, and G.~Rock.
 \newblock In M.A. McRobbie and J.K. Slaney, editors, {\em Proc.\ of the 13th
   CADE, New Brunswick}, volume 1104 of {\em LNAI}, pages 141--145. Springer,
   1996.
+
+\bibitem[GJSU]{ProofWatch:ITP-2018}
+Z.~Goertzel, J.~Jakubuv, S.~Schulz, and J.~Urban.
+\newblock {ProofWatch}: Watchlist guidance for large theories in {E}.
+\newblock In J.~Avigad and A.~Mahboubi, editors, {\em Interactive Theorem
+  Proving - 9th International Conference, {ITP} 2018, Held as Part of the
+  Federated Logic Conference, FloC 2018, Oxford, UK, July 9-12, 2018,
+  Proceedings}, volume 10895 of {\em Lecture Notes in Computer Science}, pages
+  270--288. Springer, 2018.
 
 \end{thebibliography}
 
