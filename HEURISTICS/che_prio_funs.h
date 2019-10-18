@@ -32,10 +32,13 @@ Changes
 /*                    Data type declarations                           */
 /*---------------------------------------------------------------------*/
 
+#define PrioProofWatchPrec    10000  /* Multiplicator to translate 
+                                        watchlist relevance (0.0<r<1.0) to long */
+#define PrioProofWatchBase    (3*PrioProofWatchPrec)
+
 typedef EvalPriority (*ClausePrioFun)(Clause_p clause);
 
 //#define DEBUG_PROOF_WATCH
-
 
 /*---------------------------------------------------------------------*/
 /*                Exported Functions and Variables                     */
