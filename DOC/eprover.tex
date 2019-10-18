@@ -1547,6 +1547,12 @@ See~\cite{ProofWatch:ITP-2018} for more information.
 
 The ProofWatch method is implemented using the \texttt{PreferProofWatch} and
 \texttt{DeferProofWatch} priority functions (see~\ref{sec:options:heuristics}.).
+%
+\begin{description}
+   \item[\texttt{PreferProofWatch}:] Prefer clauses which subsume some watchlist clauses.
+\item[\texttt{DeferProofWatch}:] The opposite of \texttt{PreferProofWatch}.
+\end{description}
+%
 Use \texttt{--watchlist-dir} to load multiple watchlists from a directory and
 use a custom heuristic that uses a ProofWatch priority function.
 The minimal usage example is as follows, provided directory \texttt{watchlists}
@@ -1572,14 +1578,22 @@ Options controlling the use of ProofWatch are as follows.\\
   The default value is 0.1. \\
   \texttt{--proofwatch-alpha=<arg>} & 
   Set parameter $\alpha$ of ProofWatch inherited relevance.
+  This is a treshhold on the watchlist relevance of a clause.
   The default is 0.03. \\
   \texttt{--proofwatch-beta=<arg>} & 
   Set parameter $\beta$ of ProofWatch inherited relevance.
+  This is a treshhold on the ratio of the clause relevance and of the clause
+    length.
   The default is 0.009. \\
   \texttt{--training-proofwatch} & 
    Output ProofWatch proof completion ratios with training examples.  
    Use together with \texttt{--training-examples=3}.\\
 \end{tabular}
+
+To output the ProofWatch proof progress whenever a watchlist clause is matched,
+use \texttt{-l1}.
+To see the relevance values and further debug, compile with
+\texttt{DEBUG\_PROOF\_WATCH}.
 
 \section{Learning Clause Evaluation Functions}
 \label{sec:options:learning}
