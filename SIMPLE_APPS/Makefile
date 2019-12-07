@@ -16,7 +16,7 @@ include ../Makefile.vars
 
 # Project specific variables
 
-PROJECT = ex_commandline term2dag 
+PROJECT = ex_commandline #term2dag 
 LIB     = $(PROJECT)
 all: $(LIB)
 
