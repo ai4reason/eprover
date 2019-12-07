@@ -1,0 +1,163 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+TENSORFLOW_C_C_API_EXPERIMENTAL_H_	tensorflow/c/c_api_experimental.h	17;"	d
+TENSORFLOW_C_C_API_H_	tensorflow/c/c_api.h	17;"	d
+TENSORFLOW_C_EAGER_C_API_H_	tensorflow/c/eager/c_api.h	17;"	d
+TENSORFLOW_C_TF_ATTRTYPE_H_	tensorflow/c/tf_attrtype.h	16;"	d
+TENSORFLOW_C_TF_DATATYPE_H_	tensorflow/c/tf_datatype.h	17;"	d
+TENSORFLOW_C_TF_STATUS_H_	tensorflow/c/tf_status.h	17;"	d
+TENSORFLOW_C_TF_TENSOR_H_	tensorflow/c/tf_tensor.h	17;"	d
+TFE_Context	tensorflow/c/eager/c_api.h	/^typedef struct TFE_Context TFE_Context;$/;"	t	typeref:struct:TFE_Context
+TFE_ContextDevicePlacementPolicy	tensorflow/c/eager/c_api.h	/^typedef enum TFE_ContextDevicePlacementPolicy {$/;"	g
+TFE_ContextDevicePlacementPolicy	tensorflow/c/eager/c_api.h	/^} TFE_ContextDevicePlacementPolicy;$/;"	t	typeref:enum:TFE_ContextDevicePlacementPolicy
+TFE_ContextOptions	tensorflow/c/eager/c_api.h	/^typedef struct TFE_ContextOptions TFE_ContextOptions;$/;"	t	typeref:struct:TFE_ContextOptions
+TFE_DEVICE_PLACEMENT_EXPLICIT	tensorflow/c/eager/c_api.h	/^  TFE_DEVICE_PLACEMENT_EXPLICIT = 0,$/;"	e	enum:TFE_ContextDevicePlacementPolicy
+TFE_DEVICE_PLACEMENT_SILENT	tensorflow/c/eager/c_api.h	/^  TFE_DEVICE_PLACEMENT_SILENT = 2,$/;"	e	enum:TFE_ContextDevicePlacementPolicy
+TFE_DEVICE_PLACEMENT_SILENT_FOR_INT32	tensorflow/c/eager/c_api.h	/^  TFE_DEVICE_PLACEMENT_SILENT_FOR_INT32 = 3,$/;"	e	enum:TFE_ContextDevicePlacementPolicy
+TFE_DEVICE_PLACEMENT_WARN	tensorflow/c/eager/c_api.h	/^  TFE_DEVICE_PLACEMENT_WARN = 1,$/;"	e	enum:TFE_ContextDevicePlacementPolicy
+TFE_ExecuteOpNotification	tensorflow/c/c_api_experimental.h	/^typedef struct TFE_ExecuteOpNotification TFE_ExecuteOpNotification;$/;"	t	typeref:struct:TFE_ExecuteOpNotification
+TFE_Op	tensorflow/c/eager/c_api.h	/^typedef struct TFE_Op TFE_Op;$/;"	t	typeref:struct:TFE_Op
+TFE_TensorDebugInfo	tensorflow/c/eager/c_api.h	/^typedef struct TFE_TensorDebugInfo TFE_TensorDebugInfo;$/;"	t	typeref:struct:TFE_TensorDebugInfo
+TFE_TensorHandle	tensorflow/c/eager/c_api.h	/^typedef struct TFE_TensorHandle TFE_TensorHandle;$/;"	t	typeref:struct:TFE_TensorHandle
+TFE_TraceContext	tensorflow/c/c_api_experimental.h	/^typedef struct TFE_TraceContext TFE_TraceContext;$/;"	t	typeref:struct:TFE_TraceContext
+TF_ABORTED	tensorflow/c/tf_status.h	/^  TF_ABORTED = 10,$/;"	e	enum:TF_Code
+TF_ALREADY_EXISTS	tensorflow/c/tf_status.h	/^  TF_ALREADY_EXISTS = 6,$/;"	e	enum:TF_Code
+TF_ATTR_BOOL	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_BOOL = 3,$/;"	e	enum:TF_AttrType
+TF_ATTR_FLOAT	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_FLOAT = 2,$/;"	e	enum:TF_AttrType
+TF_ATTR_FUNC	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_FUNC = 8,$/;"	e	enum:TF_AttrType
+TF_ATTR_INT	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_INT = 1,$/;"	e	enum:TF_AttrType
+TF_ATTR_PLACEHOLDER	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_PLACEHOLDER = 7,$/;"	e	enum:TF_AttrType
+TF_ATTR_SHAPE	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_SHAPE = 5,$/;"	e	enum:TF_AttrType
+TF_ATTR_STRING	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_STRING = 0,$/;"	e	enum:TF_AttrType
+TF_ATTR_TENSOR	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_TENSOR = 6,$/;"	e	enum:TF_AttrType
+TF_ATTR_TYPE	tensorflow/c/tf_attrtype.h	/^  TF_ATTR_TYPE = 4,$/;"	e	enum:TF_AttrType
+TF_ApiDefMap	tensorflow/c/c_api.h	/^typedef struct TF_ApiDefMap TF_ApiDefMap;$/;"	t	typeref:struct:TF_ApiDefMap
+TF_AttrBuilder	tensorflow/c/c_api_experimental.h	/^typedef struct TF_AttrBuilder TF_AttrBuilder;$/;"	t	typeref:struct:TF_AttrBuilder
+TF_AttrMetadata	tensorflow/c/c_api.h	/^typedef struct TF_AttrMetadata {$/;"	s
+TF_AttrMetadata	tensorflow/c/c_api.h	/^} TF_AttrMetadata;$/;"	t	typeref:struct:TF_AttrMetadata
+TF_AttrType	tensorflow/c/tf_attrtype.h	/^typedef enum TF_AttrType {$/;"	g
+TF_AttrType	tensorflow/c/tf_attrtype.h	/^} TF_AttrType;$/;"	t	typeref:enum:TF_AttrType
+TF_BFLOAT16	tensorflow/c/tf_datatype.h	/^  TF_BFLOAT16 = 14,  \/\/ Float32 truncated to 16 bits.  Only for cast ops.$/;"	e	enum:TF_DataType
+TF_BOOL	tensorflow/c/tf_datatype.h	/^  TF_BOOL = 10,$/;"	e	enum:TF_DataType
+TF_Buffer	tensorflow/c/c_api.h	/^typedef struct TF_Buffer {$/;"	s
+TF_Buffer	tensorflow/c/c_api.h	/^} TF_Buffer;$/;"	t	typeref:struct:TF_Buffer
+TF_CANCELLED	tensorflow/c/tf_status.h	/^  TF_CANCELLED = 1,$/;"	e	enum:TF_Code
+TF_CAPI_EXPORT	tensorflow/c/c_api.h	79;"	d
+TF_CAPI_EXPORT	tensorflow/c/c_api.h	83;"	d
+TF_CAPI_EXPORT	tensorflow/c/c_api.h	85;"	d
+TF_CAPI_EXPORT	tensorflow/c/c_api.h	88;"	d
+TF_CAPI_EXPORT	tensorflow/c/c_api_experimental.h	37;"	d
+TF_CAPI_EXPORT	tensorflow/c/c_api_experimental.h	41;"	d
+TF_CAPI_EXPORT	tensorflow/c/c_api_experimental.h	43;"	d
+TF_CAPI_EXPORT	tensorflow/c/c_api_experimental.h	46;"	d
+TF_CAPI_EXPORT	tensorflow/c/eager/c_api.h	31;"	d
+TF_CAPI_EXPORT	tensorflow/c/eager/c_api.h	35;"	d
+TF_CAPI_EXPORT	tensorflow/c/eager/c_api.h	37;"	d
+TF_CAPI_EXPORT	tensorflow/c/eager/c_api.h	40;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_datatype.h	27;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_datatype.h	31;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_datatype.h	33;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_datatype.h	36;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_status.h	20;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_status.h	24;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_status.h	26;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_status.h	29;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_tensor.h	31;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_tensor.h	35;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_tensor.h	37;"	d
+TF_CAPI_EXPORT	tensorflow/c/tf_tensor.h	40;"	d
+TF_COMPLEX	tensorflow/c/tf_datatype.h	/^  TF_COMPLEX = 8,    \/\/ Old identifier kept for API backwards compatibility$/;"	e	enum:TF_DataType
+TF_COMPLEX128	tensorflow/c/tf_datatype.h	/^  TF_COMPLEX128 = 18,  \/\/ Double-precision complex$/;"	e	enum:TF_DataType
+TF_COMPLEX64	tensorflow/c/tf_datatype.h	/^  TF_COMPLEX64 = 8,  \/\/ Single-precision complex$/;"	e	enum:TF_DataType
+TF_CheckpointReader	tensorflow/c/c_api_experimental.h	/^typedef struct TF_CheckpointReader TF_CheckpointReader;$/;"	t	typeref:struct:TF_CheckpointReader
+TF_Code	tensorflow/c/tf_status.h	/^typedef enum TF_Code {$/;"	g
+TF_Code	tensorflow/c/tf_status.h	/^} TF_Code;$/;"	t	typeref:enum:TF_Code
+TF_DATA_LOSS	tensorflow/c/tf_status.h	/^  TF_DATA_LOSS = 15,$/;"	e	enum:TF_Code
+TF_DEADLINE_EXCEEDED	tensorflow/c/tf_status.h	/^  TF_DEADLINE_EXCEEDED = 4,$/;"	e	enum:TF_Code
+TF_DOUBLE	tensorflow/c/tf_datatype.h	/^  TF_DOUBLE = 2,$/;"	e	enum:TF_DataType
+TF_DataType	tensorflow/c/tf_datatype.h	/^typedef enum TF_DataType {$/;"	g
+TF_DataType	tensorflow/c/tf_datatype.h	/^} TF_DataType;$/;"	t	typeref:enum:TF_DataType
+TF_DeprecatedSession	tensorflow/c/c_api.h	/^typedef struct TF_DeprecatedSession TF_DeprecatedSession;$/;"	t	typeref:struct:TF_DeprecatedSession
+TF_DeviceList	tensorflow/c/c_api.h	/^typedef struct TF_DeviceList TF_DeviceList;$/;"	t	typeref:struct:TF_DeviceList
+TF_FAILED_PRECONDITION	tensorflow/c/tf_status.h	/^  TF_FAILED_PRECONDITION = 9,$/;"	e	enum:TF_Code
+TF_FLOAT	tensorflow/c/tf_datatype.h	/^  TF_FLOAT = 1,$/;"	e	enum:TF_DataType
+TF_Function	tensorflow/c/c_api.h	/^typedef struct TF_Function TF_Function;$/;"	t	typeref:struct:TF_Function
+TF_FunctionOptions	tensorflow/c/c_api.h	/^typedef struct TF_FunctionOptions TF_FunctionOptions;$/;"	t	typeref:struct:TF_FunctionOptions
+TF_Graph	tensorflow/c/c_api.h	/^typedef struct TF_Graph TF_Graph;$/;"	t	typeref:struct:TF_Graph
+TF_HALF	tensorflow/c/tf_datatype.h	/^  TF_HALF = 19,$/;"	e	enum:TF_DataType
+TF_INT16	tensorflow/c/tf_datatype.h	/^  TF_INT16 = 5,$/;"	e	enum:TF_DataType
+TF_INT32	tensorflow/c/tf_datatype.h	/^  TF_INT32 = 3,  \/\/ Int32 tensors are always in 'host' memory.$/;"	e	enum:TF_DataType
+TF_INT64	tensorflow/c/tf_datatype.h	/^  TF_INT64 = 9,$/;"	e	enum:TF_DataType
+TF_INT8	tensorflow/c/tf_datatype.h	/^  TF_INT8 = 6,$/;"	e	enum:TF_DataType
+TF_INTERNAL	tensorflow/c/tf_status.h	/^  TF_INTERNAL = 13,$/;"	e	enum:TF_Code
+TF_INVALID_ARGUMENT	tensorflow/c/tf_status.h	/^  TF_INVALID_ARGUMENT = 3,$/;"	e	enum:TF_Code
+TF_ImportGraphDefOptions	tensorflow/c/c_api.h	/^typedef struct TF_ImportGraphDefOptions TF_ImportGraphDefOptions;$/;"	t	typeref:struct:TF_ImportGraphDefOptions
+TF_ImportGraphDefResults	tensorflow/c/c_api.h	/^typedef struct TF_ImportGraphDefResults TF_ImportGraphDefResults;$/;"	t	typeref:struct:TF_ImportGraphDefResults
+TF_Input	tensorflow/c/c_api.h	/^typedef struct TF_Input {$/;"	s
+TF_Input	tensorflow/c/c_api.h	/^} TF_Input;$/;"	t	typeref:struct:TF_Input
+TF_Library	tensorflow/c/c_api.h	/^typedef struct TF_Library TF_Library;$/;"	t	typeref:struct:TF_Library
+TF_NOT_FOUND	tensorflow/c/tf_status.h	/^  TF_NOT_FOUND = 5,$/;"	e	enum:TF_Code
+TF_OK	tensorflow/c/tf_status.h	/^  TF_OK = 0,$/;"	e	enum:TF_Code
+TF_OUT_OF_RANGE	tensorflow/c/tf_status.h	/^  TF_OUT_OF_RANGE = 11,$/;"	e	enum:TF_Code
+TF_Operation	tensorflow/c/c_api.h	/^typedef struct TF_Operation TF_Operation;$/;"	t	typeref:struct:TF_Operation
+TF_OperationDescription	tensorflow/c/c_api.h	/^typedef struct TF_OperationDescription TF_OperationDescription;$/;"	t	typeref:struct:TF_OperationDescription
+TF_Output	tensorflow/c/c_api.h	/^typedef struct TF_Output {$/;"	s
+TF_Output	tensorflow/c/c_api.h	/^} TF_Output;$/;"	t	typeref:struct:TF_Output
+TF_PERMISSION_DENIED	tensorflow/c/tf_status.h	/^  TF_PERMISSION_DENIED = 7,$/;"	e	enum:TF_Code
+TF_QINT16	tensorflow/c/tf_datatype.h	/^  TF_QINT16 = 15,    \/\/ Quantized int16$/;"	e	enum:TF_DataType
+TF_QINT32	tensorflow/c/tf_datatype.h	/^  TF_QINT32 = 13,    \/\/ Quantized int32$/;"	e	enum:TF_DataType
+TF_QINT8	tensorflow/c/tf_datatype.h	/^  TF_QINT8 = 11,     \/\/ Quantized int8$/;"	e	enum:TF_DataType
+TF_QUINT16	tensorflow/c/tf_datatype.h	/^  TF_QUINT16 = 16,   \/\/ Quantized uint16$/;"	e	enum:TF_DataType
+TF_QUINT8	tensorflow/c/tf_datatype.h	/^  TF_QUINT8 = 12,    \/\/ Quantized uint8$/;"	e	enum:TF_DataType
+TF_RESOURCE	tensorflow/c/tf_datatype.h	/^  TF_RESOURCE = 20,$/;"	e	enum:TF_DataType
+TF_RESOURCE_EXHAUSTED	tensorflow/c/tf_status.h	/^  TF_RESOURCE_EXHAUSTED = 8,$/;"	e	enum:TF_Code
+TF_STRING	tensorflow/c/tf_datatype.h	/^  TF_STRING = 7,$/;"	e	enum:TF_DataType
+TF_Server	tensorflow/c/c_api.h	/^typedef struct TF_Server TF_Server;$/;"	t	typeref:struct:TF_Server
+TF_Session	tensorflow/c/c_api.h	/^typedef struct TF_Session TF_Session;$/;"	t	typeref:struct:TF_Session
+TF_SessionOptions	tensorflow/c/c_api.h	/^typedef struct TF_SessionOptions TF_SessionOptions;$/;"	t	typeref:struct:TF_SessionOptions
+TF_ShapeAndType	tensorflow/c/c_api_experimental.h	/^struct TF_ShapeAndType {$/;"	s
+TF_ShapeAndType	tensorflow/c/c_api_experimental.h	/^typedef struct TF_ShapeAndType TF_ShapeAndType;$/;"	t	typeref:struct:TF_ShapeAndType
+TF_ShapeAndTypeList	tensorflow/c/c_api_experimental.h	/^struct TF_ShapeAndTypeList {$/;"	s
+TF_ShapeAndTypeList	tensorflow/c/c_api_experimental.h	/^typedef struct TF_ShapeAndTypeList TF_ShapeAndTypeList;$/;"	t	typeref:struct:TF_ShapeAndTypeList
+TF_Status	tensorflow/c/tf_status.h	/^typedef struct TF_Status TF_Status;$/;"	t	typeref:struct:TF_Status
+TF_Tensor	tensorflow/c/tf_tensor.h	/^typedef struct TF_Tensor TF_Tensor;$/;"	t	typeref:struct:TF_Tensor
+TF_UINT16	tensorflow/c/tf_datatype.h	/^  TF_UINT16 = 17,$/;"	e	enum:TF_DataType
+TF_UINT32	tensorflow/c/tf_datatype.h	/^  TF_UINT32 = 22,$/;"	e	enum:TF_DataType
+TF_UINT64	tensorflow/c/tf_datatype.h	/^  TF_UINT64 = 23,$/;"	e	enum:TF_DataType
+TF_UINT8	tensorflow/c/tf_datatype.h	/^  TF_UINT8 = 4,$/;"	e	enum:TF_DataType
+TF_UNAUTHENTICATED	tensorflow/c/tf_status.h	/^  TF_UNAUTHENTICATED = 16,$/;"	e	enum:TF_Code
+TF_UNAVAILABLE	tensorflow/c/tf_status.h	/^  TF_UNAVAILABLE = 14,$/;"	e	enum:TF_Code
+TF_UNIMPLEMENTED	tensorflow/c/tf_status.h	/^  TF_UNIMPLEMENTED = 12,$/;"	e	enum:TF_Code
+TF_UNKNOWN	tensorflow/c/tf_status.h	/^  TF_UNKNOWN = 2,$/;"	e	enum:TF_Code
+TF_VARIANT	tensorflow/c/tf_datatype.h	/^  TF_VARIANT = 21,$/;"	e	enum:TF_DataType
+TF_WhileParams	tensorflow/c/c_api.h	/^typedef struct TF_WhileParams {$/;"	s
+TF_WhileParams	tensorflow/c/c_api.h	/^} TF_WhileParams;$/;"	t	typeref:struct:TF_WhileParams
+body_graph	tensorflow/c/c_api.h	/^  TF_Graph* const body_graph;$/;"	m	struct:TF_WhileParams
+body_inputs	tensorflow/c/c_api.h	/^  const TF_Output* const body_inputs;$/;"	m	struct:TF_WhileParams
+body_outputs	tensorflow/c/c_api.h	/^  TF_Output* const body_outputs;$/;"	m	struct:TF_WhileParams
+cond_graph	tensorflow/c/c_api.h	/^  TF_Graph* const cond_graph;$/;"	m	struct:TF_WhileParams
+cond_inputs	tensorflow/c/c_api.h	/^  const TF_Output* const cond_inputs;$/;"	m	struct:TF_WhileParams
+cond_output	tensorflow/c/c_api.h	/^  TF_Output cond_output;$/;"	m	struct:TF_WhileParams
+data	tensorflow/c/c_api.h	/^  const void* data;$/;"	m	struct:TF_Buffer
+data_deallocator	tensorflow/c/c_api.h	/^  void (*data_deallocator)(void* data, size_t length);$/;"	m	struct:TF_Buffer
+dims	tensorflow/c/c_api_experimental.h	/^  int64_t* dims;$/;"	m	struct:TF_ShapeAndType
+dtype	tensorflow/c/c_api_experimental.h	/^  TF_DataType dtype;$/;"	m	struct:TF_ShapeAndType
+index	tensorflow/c/c_api.h	/^  int index;  \/\/ The index of the input within oper.$/;"	m	struct:TF_Input
+index	tensorflow/c/c_api.h	/^  int index;  \/\/ The index of the output within oper.$/;"	m	struct:TF_Output
+is_list	tensorflow/c/c_api.h	/^  unsigned char is_list;$/;"	m	struct:TF_AttrMetadata
+items	tensorflow/c/c_api_experimental.h	/^  TF_ShapeAndType* items;$/;"	m	struct:TF_ShapeAndTypeList
+length	tensorflow/c/c_api.h	/^  size_t length;$/;"	m	struct:TF_Buffer
+list_size	tensorflow/c/c_api.h	/^  int64_t list_size;$/;"	m	struct:TF_AttrMetadata
+name	tensorflow/c/c_api.h	/^  const char* name;$/;"	m	struct:TF_WhileParams
+ninputs	tensorflow/c/c_api.h	/^  const int ninputs;$/;"	m	struct:TF_WhileParams
+num_dims	tensorflow/c/c_api_experimental.h	/^  int num_dims;$/;"	m	struct:TF_ShapeAndType
+num_items	tensorflow/c/c_api_experimental.h	/^  int num_items;$/;"	m	struct:TF_ShapeAndTypeList
+oper	tensorflow/c/c_api.h	/^  TF_Operation* oper;$/;"	m	struct:TF_Input
+oper	tensorflow/c/c_api.h	/^  TF_Operation* oper;$/;"	m	struct:TF_Output
+tensorflow	tensorflow/c/eager/c_api.h	/^namespace tensorflow {$/;"	n
+total_size	tensorflow/c/c_api.h	/^  int64_t total_size;$/;"	m	struct:TF_AttrMetadata
+type	tensorflow/c/c_api.h	/^  TF_AttrType type;$/;"	m	struct:TF_AttrMetadata

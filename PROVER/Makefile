@@ -43,8 +43,11 @@ EPROVER = eprover.o ../lib/CONTROL.a ../lib/HEURISTICS.a\
             ../lib/CLAUSES.a ../lib/ORDERINGS.a ../lib/TERMS.a\
             ../lib/INOUT.a ../lib/BASICS.a  ../lib/CONTRIB.a
 
+TFFLAGS = -L../EXTERNAL/tensorflow/lib 
+TFLIBS = -ltensorflow -ltensorflow_framework
+
 eprover: $(EPROVER)
-	$(LD) -o eprover $(EPROVER) $(LIBS)
+	$(LD) $(TFFLAGS) -o eprover $(EPROVER) $(LIBS) $(TFLIBS)
 
 eprover-ho: eprover
 	mv eprover eprover-ho

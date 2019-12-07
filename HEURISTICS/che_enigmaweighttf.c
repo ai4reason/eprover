@@ -21,6 +21,7 @@ Changes
 -----------------------------------------------------------------------*/
 
 #include "che_enigmaweighttf.h"
+#include <tensorflow/c/c_api.h>
 
 
 /*---------------------------------------------------------------------*/
@@ -803,6 +804,7 @@ static void extweight_init(EnigmaWeightTfParam_p data)
       return;
    }
 
+   printf("Hello from TensorFlow C library version %s\n", TF_Version());
    data->tmp_bank = TBAlloc(data->proofstate->signature);
 
    data->conj_mode = true;
