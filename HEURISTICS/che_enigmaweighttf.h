@@ -28,6 +28,7 @@ Changes
 #include <che_refinedweight.h>
 //#include <che_enigma.h>
 
+#include <tensorflow/c/c_api.h>
 
 /*---------------------------------------------------------------------*/
 /*                    Data type declarations                           */
@@ -46,6 +47,7 @@ typedef struct enigmaweighttfparamcell
 
    void   (*init_fun)(struct enigmaweighttfparamcell*);
 
+   // clause edges
    NumTree_p terms;
    NumTree_p syms;
    long fresh_t;
@@ -55,6 +57,7 @@ typedef struct enigmaweighttfparamcell
    PStack_p tedges;
    PStack_p cedges;
 
+   // conjecture edges
    bool conj_mode;
    NumTree_p conj_terms;
    NumTree_p conj_syms;
@@ -65,9 +68,24 @@ typedef struct enigmaweighttfparamcell
    PStack_p conj_tedges;
    PStack_p conj_cedges;
 
-   PStack_p ini_nodes;
-   PStack_p ini_symbols;
-   PStack_p ini_clauses;
+   // TensorFlow data
+   TF_Graph* graph;
+   TF_SessionOptions* options;
+   TF_Session* session;
+   TF_Buffer* run;
+   //TF_Buffer* meta;
+
+   TF_Output inputs[25];
+   TF_Tensor* input_values[25];
+
+   TF_Output outputs[1];
+   TF_Tensor* output_values[1];
+
+   int n_is;
+   int n_i1;
+   int n_i2;
+   int n_i3;
+   
    
 }EnigmaWeightTfParamCell, *EnigmaWeightTfParam_p;
 

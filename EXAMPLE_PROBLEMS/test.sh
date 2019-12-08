@@ -1,4 +1,5 @@
 #!/bin/sh
 
-../PROVER/eprover -s -H'(1*EnigmaTf(ConstPrio,model,0))' $1
+export LD_LIBRARY_PATH=$PWD/../EXTERNAL/tensorflow/lib
+../PROVER/eprover -s -H'(1*EnigmaTf(ConstPrio,model,0))' $@
 

@@ -21,8 +21,8 @@ Changes
 -----------------------------------------------------------------------*/
 
 #include "che_enigmaweighttf.h"
-#include <tensorflow/c/c_api.h>
 
+#include <tensorflow/c/c_api_experimental.h>
 
 /*---------------------------------------------------------------------*/
 /*                        Global Variables                             */
@@ -299,14 +299,15 @@ static void names_update_clause(Clause_p clause, EnigmaWeightTfParam_p data)
    }
 
    //DEBUG:
-   fprintf(GlobalOut, "#TF# Clause c%ld: ", cid);
-   ClausePrint(GlobalOut, clause, true);
-   fprintf(GlobalOut, "\n");
+   //fprintf(GlobalOut, "#TF# Clause c%ld: ", cid);
+   //ClausePrint(GlobalOut, clause, true);
+   //fprintf(GlobalOut, "\n");
    //
 
    ClauseFree(clause0);
 }
 
+/*
 static void debug_symbols(EnigmaWeightTfParam_p data)
 {  
    PStack_p stack;
@@ -401,29 +402,42 @@ static void debug_edges(EnigmaWeightTfParam_p data)
 
 }
 
-static void debug_vector(char* name, float* vals, int len)
+static void debug_vector_float(char* name, float* vals, int len, char* tfid, int idx) 
 {
-   fprintf(GlobalOut, "%s = [ ", name);
+   fprintf(GlobalOut, "#TF# %s: index=%d op=%s\n", name, idx, tfid);
+   fprintf(GlobalOut, "\t%s[%d] = [ ", name, len);
    for (int i=0; i<len; i++)
    {
-      fprintf(GlobalOut, "%d:%.0f%s", i, vals[i], (i<len-1) ? ", " : " ]\n");
+      fprintf(GlobalOut, "%d:%.02f%s", i, vals[i], (i<len-1) ? ", " : " ]\n");
    }
 }
 
-static void debug_matrix(char* name, float* vals, int dimx, int dimy)
+static void debug_vector_int32(char* name, int32_t* vals, int len, char* tfid, int idx)
 {
-   fprintf(GlobalOut, "%s = [ ", name);
+   fprintf(GlobalOut, "#TF# %s: index=%d op=%s\n", name, idx, tfid);
+   fprintf(GlobalOut, "\t%s[%d] = [ ", name, len);
+   for (int i=0; i<len; i++)
+   {
+      fprintf(GlobalOut, "%d:%d%s", i, vals[i], (i<len-1) ? ", " : " ]\n");
+   }
+}
+
+static void debug_matrix(char* name, int32_t* vals, int dimx, int dimy, char* tfid, int idx0) 
+{
+   fprintf(GlobalOut, "#TF# %s: index=%d op=%s\n", name, idx0, tfid);
+   fprintf(GlobalOut, "\t%s[%d,%d] = [ ", name, dimx, dimy);
    int idx = 0;
    for (int x=0; x<dimx; x++)
    {
       fprintf(GlobalOut, "%d:[", x);
       for (int y=0; y<dimy; y++)
       {
-         fprintf(GlobalOut, "%.0f%s", vals[idx++], (y<dimy-1) ? "," : "]");
+         fprintf(GlobalOut, "%d%s", vals[idx++], (y<dimy-1) ? "," : "]");
       }
-      fprintf(GlobalOut, "]%s", (x<dimx-1) ? ", " : " ]\n");
+      fprintf(GlobalOut, "%s", (x<dimx-1) ? ", " : " ]\n");
    }
 }
+*/
 
 static void free_edges(PStack_p stack)
 {
@@ -456,7 +470,7 @@ static void names_reset(EnigmaWeightTfParam_p data)
    data->maxvar = data->conj_maxvar;
 }
 
-static void tensor_fill_ini_nodes(float* vals, NumTree_p syms, 
+static void tensor_fill_ini_nodes(int32_t* vals, NumTree_p syms, 
    EnigmaWeightTfParam_p data)
 {
    NumTree_p node;
@@ -485,7 +499,7 @@ static void tensor_fill_ini_nodes(float* vals, NumTree_p syms,
    NumTreeTraverseExit(stack);
 }
 
-static void tensor_fill_ini_symbols(float* vals, NumTree_p terms, 
+static void tensor_fill_ini_symbols(int32_t* vals, NumTree_p terms, 
    EnigmaWeightTfParam_p data)
 {
    NumTree_p node;
@@ -506,7 +520,7 @@ static void tensor_fill_ini_symbols(float* vals, NumTree_p terms,
    NumTreeTraverseExit(stack);
 }
 
-static void tensor_fill_ini_clauses(float* vals, EnigmaWeightTfParam_p data)
+static void tensor_fill_ini_clauses(int32_t* vals, EnigmaWeightTfParam_p data)
 {
    for (int i=0; i<data->fresh_c; i++)
    {
@@ -514,7 +528,7 @@ static void tensor_fill_ini_clauses(float* vals, EnigmaWeightTfParam_p data)
    }
 }
 
-static void tensor_fill_encode_list(PStack_p lists, float* vals, float* lens)
+static int tensor_fill_encode_list(PStack_p lists, int32_t* vals, int32_t* lens)
 {
    int idx = 0;
    for (int i=0; i<lists->current; i++)
@@ -528,10 +542,11 @@ static void tensor_fill_encode_list(PStack_p lists, float* vals, float* lens)
       PStackFree(list);
    }
    PStackFree(lists);
+   return idx;
 }
 
-static void tensor_fill_encode_dict_symbol(PStack_p lists, 
-   float* nodes, float* sgn, float* lens)
+static int tensor_fill_encode_dict_symbol(PStack_p lists, 
+   int32_t* nodes, float* sgn, int32_t* lens)
 {
    long i, j, k, l, b;
    int idx_nodes = 0;
@@ -552,10 +567,11 @@ static void tensor_fill_encode_dict_symbol(PStack_p lists,
       PStackFree(list);
    }
    PStackFree(lists);
+   return idx_sgn;
 }
 
-static void tensor_fill_encode_dict_node(PStack_p lists, 
-   float* symbols, float* nodes, float* sgn, float* lens, int node_mode)
+static int tensor_fill_encode_dict_node(PStack_p lists, 
+   int32_t* symbols, int32_t* nodes, float* sgn, int32_t* lens, int node_mode)
 {
    long i, j, k, l, b;
    int idx_nodes = 0;
@@ -592,13 +608,14 @@ static void tensor_fill_encode_dict_node(PStack_p lists,
       PStackFree(list);
    }
    PStackFree(lists);
+   return idx_symbols;
 }
 
 static void tensor_fill_clause_inputs(
-   float* clause_inputs_data, 
-   float* clause_inputs_lens, 
-   float* node_c_inputs_data, 
-   float* node_c_inputs_lens, 
+   int32_t* clause_inputs_data, 
+   int32_t* clause_inputs_lens, 
+   int32_t* node_c_inputs_data, 
+   int32_t* node_c_inputs_lens, 
    EnigmaWeightTfParam_p data)
 {
    int i;
@@ -635,23 +652,23 @@ static void tensor_fill_clause_inputs(
    tensor_fill_encode_list(clists, clause_inputs_data, clause_inputs_lens);
    tensor_fill_encode_list(tlists, node_c_inputs_data, node_c_inputs_lens);
 }
-
+   
 static void tensor_fill_term_inputs(
-   float* symbol_inputs_nodes, 
+   int32_t* symbol_inputs_nodes, 
    float* symbol_inputs_sgn, 
-   float* symbol_inputs_len, 
-   float* node_inputs_1_symbols,
-   float* node_inputs_1_nodes,
+   int32_t* symbol_inputs_lens, 
+   int32_t* node_inputs_1_symbols,
+   int32_t* node_inputs_1_nodes,
    float* node_inputs_1_sgn,
-   float* node_inputs_1_len,
-   float* node_inputs_2_symbols,
-   float* node_inputs_2_nodes,
+   int32_t* node_inputs_1_lens,
+   int32_t* node_inputs_2_symbols,
+   int32_t* node_inputs_2_nodes,
    float* node_inputs_2_sgn,
-   float* node_inputs_2_len,
-   float* node_inputs_3_symbols,
-   float* node_inputs_3_nodes,
+   int32_t* node_inputs_2_lens,
+   int32_t* node_inputs_3_symbols,
+   int32_t* node_inputs_3_nodes,
    float* node_inputs_3_sgn,
-   float* node_inputs_3_len,
+   int32_t* node_inputs_3_lens,
    EnigmaWeightTfParam_p data)
 {
    int idx;
@@ -703,95 +720,264 @@ static void tensor_fill_term_inputs(
       PStackPushP(PStackElementP(slists, l), edge);
    }
 
-   tensor_fill_encode_dict_symbol(slists, symbol_inputs_nodes, 
-      symbol_inputs_sgn, symbol_inputs_len);
-   tensor_fill_encode_dict_node(n1lists, node_inputs_1_symbols, 
-      node_inputs_1_nodes, node_inputs_1_sgn, node_inputs_1_len, 1);
-   tensor_fill_encode_dict_node(n2lists, node_inputs_2_symbols, 
-      node_inputs_2_nodes, node_inputs_2_sgn, node_inputs_2_len, 2);
-   tensor_fill_encode_dict_node(n3lists, node_inputs_3_symbols, 
-      node_inputs_3_nodes, node_inputs_3_sgn, node_inputs_3_len, 3);
+   data->n_is = tensor_fill_encode_dict_symbol(slists, symbol_inputs_nodes, 
+      symbol_inputs_sgn, symbol_inputs_lens);
+   data->n_i1 = tensor_fill_encode_dict_node(n1lists, node_inputs_1_symbols, 
+      node_inputs_1_nodes, node_inputs_1_sgn, node_inputs_1_lens, 1);
+   data->n_i2 = tensor_fill_encode_dict_node(n2lists, node_inputs_2_symbols, 
+      node_inputs_2_nodes, node_inputs_2_sgn, node_inputs_2_lens, 2);
+   data->n_i3 = tensor_fill_encode_dict_node(n3lists, node_inputs_3_symbols, 
+      node_inputs_3_nodes, node_inputs_3_sgn, node_inputs_3_lens, 3);
 }
 
-static void tensor_fill(EnigmaWeightTfParam_p data)
+static void tensor_fill_query(
+   int32_t* labels, 
+   int32_t* prob_segments_lens, 
+   int32_t* prob_segments_data, 
+   EnigmaWeightTfParam_p data)
 {
-   static float ini_nodes[2048];
-   static float ini_symbols[2048];
-   static float ini_clauses[2048];
-   static float clause_inputs_data[2048];
-   static float clause_inputs_lens[2048];
-   static float node_c_inputs_data[2048];
-   static float node_c_inputs_lens[2048];
-   static float symbol_inputs_nodes[2048]; 
-   static float symbol_inputs_sgn[2048]; 
-   static float symbol_inputs_len[2048]; 
-   static float node_inputs_1_symbols[2048];
-   static float node_inputs_1_nodes[2048];
-   static float node_inputs_1_sgn[2048];
-   static float node_inputs_1_len[2048];
-   static float node_inputs_2_symbols[2048];
-   static float node_inputs_2_nodes[2048];
-   static float node_inputs_2_sgn[2048];
-   static float node_inputs_2_len[2048];
-   static float node_inputs_3_symbols[2048];
-   static float node_inputs_3_nodes[2048];
-   static float node_inputs_3_sgn[2048];
-   static float node_inputs_3_len[2048];
+   int n_q = data->fresh_c - data->conj_fresh_c; 
+   prob_segments_lens[0] = 1 + n_q;
+   prob_segments_data[0] = data->conj_fresh_c;
+   for (int i=0; i<n_q; i++)
+   {
+      prob_segments_data[1+i] = 1;
+   }
+}
+
+void idle_deallocator(void* data, size_t len, void* arg)
+{
+}
+
+void set_input_vector_int32(int idx, int size, char* id, int32_t* values, 
+   char* name, EnigmaWeightTfParam_p data)
+{
+   data->inputs[idx].oper = TF_GraphOperationByName(data->graph, name);
+   data->inputs[idx].index = 0;
+
+   int64_t dims[1];
+   dims[0] = size;
+   data->input_values[idx] = TF_NewTensor(
+      TF_INT32, dims, 1, values, size*sizeof(int32_t), idle_deallocator, NULL);
+   
+   //debug_vector_int32(id, values, size, name, idx);
+}
+
+void set_input_vector_float(int idx, int size, char* id, float* values, 
+   char* name, EnigmaWeightTfParam_p data)
+{
+   data->inputs[idx].oper = TF_GraphOperationByName(data->graph, name);
+   data->inputs[idx].index = 0;
+
+   int64_t dims[1];
+   dims[0] = size;
+   data->input_values[idx] = TF_NewTensor(
+      TF_FLOAT, dims, 1, values, size*sizeof(float), idle_deallocator, NULL);
+   
+   //debug_vector_float(id, values, size, name, idx);
+}
+
+void set_input_matrix(int idx, int dimx, int dimy, char* id, int32_t* values, 
+   char* name, EnigmaWeightTfParam_p data)
+{
+   data->inputs[idx].oper = TF_GraphOperationByName(data->graph, name);
+   data->inputs[idx].index = 0;
+
+   int64_t dims[2];
+   dims[0] = dimx;
+   dims[1] = dimy;
+   int64_t size = dimx * dimy;
+   data->input_values[idx] = TF_NewTensor(
+      TF_INT32, dims, 2, values, size*sizeof(int32_t), idle_deallocator, NULL);
+   
+   //debug_matrix(id, values, dimx, dimy, name, idx);
+}
+
+#define MAXSIZE 2048
+
+static void tensor_fill_input(EnigmaWeightTfParam_p data)
+{
+   static int32_t ini_nodes[MAXSIZE];
+   static int32_t ini_symbols[MAXSIZE];
+   static int32_t ini_clauses[MAXSIZE];
+   static int32_t clause_inputs_data[MAXSIZE];
+   static int32_t clause_inputs_lens[MAXSIZE];
+   static int32_t node_c_inputs_data[MAXSIZE];
+   static int32_t node_c_inputs_lens[MAXSIZE];
+   static int32_t symbol_inputs_nodes[3*MAXSIZE]; 
+   static int32_t symbol_inputs_lens[MAXSIZE]; 
+   static int32_t node_inputs_1_symbols[MAXSIZE];
+   static int32_t node_inputs_1_nodes[2*MAXSIZE];
+   static int32_t node_inputs_1_lens[MAXSIZE];
+   static int32_t node_inputs_2_symbols[MAXSIZE];
+   static int32_t node_inputs_2_nodes[2*MAXSIZE];
+   static int32_t node_inputs_2_lens[MAXSIZE];
+   static int32_t node_inputs_3_symbols[MAXSIZE];
+   static int32_t node_inputs_3_nodes[2*MAXSIZE];
+   static int32_t node_inputs_3_lens[MAXSIZE];
+   static float symbol_inputs_sgn[MAXSIZE]; 
+   static float node_inputs_1_sgn[MAXSIZE];
+   static float node_inputs_2_sgn[MAXSIZE];
+   static float node_inputs_3_sgn[MAXSIZE];
+   static int32_t prob_segments_lens[MAXSIZE];
+   static int32_t prob_segments_data[MAXSIZE];
+   static int32_t labels[MAXSIZE];
+   
+   int n_ce = data->cedges->current + data->conj_cedges->current;
+   int n_te = data->tedges->current + data->conj_tedges->current;
+   int n_s = data->fresh_s;
+   int n_c = data->fresh_c;
+   int n_t = data->fresh_t;
+   int n_gc = n_c - data->conj_fresh_c; // goal clauses (non-conjecture)
+   if (n_te > MAXSIZE)
+   {
+      Error("Enigma-TF: Too many term edges (required: %d; max: %d).\nRecompile with increased MAXSIZE.", OTHER_ERROR, n_te, MAXSIZE);
+   }
 
    tensor_fill_ini_nodes(ini_nodes, data->conj_terms, data);
    tensor_fill_ini_nodes(ini_nodes, data->terms, data);
-   debug_vector("ini_nodes", ini_nodes, data->fresh_t);
-
    tensor_fill_ini_symbols(ini_symbols, data->conj_syms, data);
    tensor_fill_ini_symbols(ini_symbols, data->syms, data);
-   debug_vector("ini_symbols", ini_symbols, data->fresh_s);
-
    tensor_fill_ini_clauses(ini_clauses, data);
-   debug_vector("ini_clauses", ini_clauses, data->fresh_c);
 
-   tensor_fill_clause_inputs(clause_inputs_data, clause_inputs_lens, 
-      node_c_inputs_data, node_c_inputs_lens, data);
-   debug_vector("clause_inputs_data", clause_inputs_data, 
-      data->cedges->current + data->conj_cedges->current);
-   debug_vector("clause_inputs_lens", clause_inputs_lens, data->fresh_c);
-   debug_vector("node_c_inputs_data", node_c_inputs_data, 
-      data->cedges->current + data->conj_cedges->current);
-   debug_vector("node_c_inputs_lens", node_c_inputs_lens, data->fresh_t);
+   //debug_vector_int32("ini_nodes", ini_nodes, n_t);
+   //debug_vector_int32("ini_symbols", ini_symbols, n_s);
+   //debug_vector_int32("ini_clauses", ini_clauses, n_c);
 
+   tensor_fill_clause_inputs(
+      clause_inputs_data, 
+      clause_inputs_lens, 
+      node_c_inputs_data, 
+      node_c_inputs_lens, 
+      data
+   );
+   
+   data->n_is = 0;
+   data->n_i1 = 0;
+   data->n_i2 = 0;
+   data->n_i3 = 0;
    tensor_fill_term_inputs(
       symbol_inputs_nodes, 
       symbol_inputs_sgn, 
-      symbol_inputs_len, 
+      symbol_inputs_lens, 
       node_inputs_1_symbols,
       node_inputs_1_nodes,
       node_inputs_1_sgn,
-      node_inputs_1_len,
+      node_inputs_1_lens,
       node_inputs_2_symbols,
       node_inputs_2_nodes,
       node_inputs_2_sgn,
-      node_inputs_2_len,
+      node_inputs_2_lens,
       node_inputs_3_symbols,
       node_inputs_3_nodes,
       node_inputs_3_sgn,
-      node_inputs_3_len,
-      data);
-   int te = data->tedges->current + data->conj_tedges->current;
-   debug_vector("symbol_inputs_len", symbol_inputs_len, data->fresh_s);
-   debug_vector("symbol_inputs_sgn", symbol_inputs_sgn, te);
-   debug_matrix("symbol_inputs_nodes", symbol_inputs_nodes, te, 3);
-   debug_vector("node_inputs_1_len", node_inputs_1_len, data->fresh_t);
-   debug_vector("node_inputs_1_symbols", node_inputs_1_symbols, te);
-   debug_vector("node_inputs_1_sgn", node_inputs_1_sgn, te);
-   debug_matrix("node_inputs_1_nodes", node_inputs_1_nodes, te, 2);
-   debug_vector("node_inputs_2_len", node_inputs_2_len, data->fresh_t);
-   debug_vector("node_inputs_2_symbols", node_inputs_2_symbols, te);
-   debug_vector("node_inputs_2_sgn", node_inputs_2_sgn, te);
-   debug_matrix("node_inputs_2_nodes", node_inputs_2_nodes, te, 2);
-   debug_vector("node_inputs_3_len", node_inputs_3_len, data->fresh_t);
-   debug_vector("node_inputs_3_symbols", node_inputs_3_symbols, te);
-   debug_vector("node_inputs_3_sgn", node_inputs_3_sgn, te);
-   debug_matrix("node_inputs_3_nodes", node_inputs_3_nodes, te, 2);
+      node_inputs_3_lens,
+      data
+   );
+   int n_is = data->n_is;
+   int n_i1 = data->n_i1;
+   int n_i2 = data->n_i2;
+   int n_i3 = data->n_i3;
    
+   tensor_fill_query(labels, prob_segments_lens, prob_segments_data, data);
+   
+   // set vectors to data
+   set_input_vector_int32(0, n_t, "ini_nodes", ini_nodes, "GraphPlaceholder/ini_nodes", data);
+   set_input_vector_int32(1, n_s, "ini_symbols", ini_symbols, "GraphPlaceholder/ini_symbols", data);
+   set_input_vector_int32(2, n_c, "ini_clauses", ini_clauses, "GraphPlaceholder/ini_clauses", data);
+   set_input_vector_int32(3, n_t, "node_inputs_1_lens", node_inputs_1_lens, "GraphPlaceholder/GraphHyperEdgesA/segment_lens", data);
+   set_input_vector_int32(4, n_i1, "node_inputs_1_symbols", node_inputs_1_symbols, "GraphPlaceholder/GraphHyperEdgesA/symbols", data);
+   set_input_vector_float(5, n_i1, "node_inputs_1_sgn", node_inputs_1_sgn, "GraphPlaceholder/GraphHyperEdgesA/sgn", data);
+   set_input_vector_int32(6, n_t, "node_inputs_2_lens", node_inputs_2_lens, "GraphPlaceholder/GraphHyperEdgesA_1/segment_lens", data);
+   set_input_vector_int32(7, n_i2, "node_inputs_2_symbols", node_inputs_2_symbols, "GraphPlaceholder/GraphHyperEdgesA_1/symbols", data);
+   set_input_vector_float(8, n_i2, "node_inputs_2_sgn", node_inputs_2_sgn, "GraphPlaceholder/GraphHyperEdgesA_1/sgn", data);
+   set_input_vector_int32(9, n_t, "node_inputs_3_lens", node_inputs_3_lens, "GraphPlaceholder/GraphHyperEdgesA_2/segment_lens", data);
+   set_input_vector_int32(10, n_i3, "node_inputs_3_symbols", node_inputs_3_symbols, "GraphPlaceholder/GraphHyperEdgesA_2/symbols", data);
+   set_input_vector_float(11, n_i3, "node_inputs_3_sgn", node_inputs_3_sgn, "GraphPlaceholder/GraphHyperEdgesA_2/sgn", data);
+   set_input_vector_int32(12, n_s, "symbol_inputs_lens", symbol_inputs_lens, "GraphPlaceholder/GraphHyperEdgesB/segment_lens", data);
+   set_input_vector_float(13, n_is, "symbol_inputs_sgn", symbol_inputs_sgn, "GraphPlaceholder/GraphHyperEdgesB/sgn", data);
+   set_input_vector_int32(14, n_t, "node_c_inputs_lens", node_c_inputs_lens, "GraphPlaceholder/GraphEdges/segment_lens", data);
+   set_input_vector_int32(15, n_ce, "node_c_inputs_data", node_c_inputs_data, "GraphPlaceholder/GraphEdges/data", data);
+   set_input_vector_int32(16, n_c, "clause_inputs_lens", clause_inputs_lens, "GraphPlaceholder/GraphEdges_1/segment_lens", data);
+   set_input_vector_int32(17, n_ce, "clause_inputs_data", clause_inputs_data, "GraphPlaceholder/GraphEdges_1/data", data);
+   set_input_vector_int32(18, 1, "prob_segments_lens", prob_segments_lens, "segment_lens", data);
+   set_input_vector_int32(19, 1+n_gc, "prob_segments_data", prob_segments_data, "segment_data", data);
+   set_input_vector_int32(20, n_gc, "labels", labels, "Placeholder", data);
+   set_input_matrix(21, n_i1, 2, "node_inputs_1_nodes", node_inputs_1_nodes, "GraphPlaceholder/GraphHyperEdgesA/nodes", data);
+   set_input_matrix(22, n_i2, 2, "node_inputs_2_nodes", node_inputs_2_nodes, "GraphPlaceholder/GraphHyperEdgesA_1/nodes", data);
+   set_input_matrix(23, n_i3, 2, "node_inputs_3_nodes", node_inputs_3_nodes, "GraphPlaceholder/GraphHyperEdgesA_2/nodes", data);
+   set_input_matrix(24, n_is, 3, "symbol_inputs_nodes", symbol_inputs_nodes, "GraphPlaceholder/GraphHyperEdgesB/nodes", data);
+}
+
+static void tensor_fill_output(EnigmaWeightTfParam_p data)
+{
+   static float logits[MAXSIZE];
+
+   data->outputs[0].oper = TF_GraphOperationByName(data->graph, "Squeeze");
+   data->outputs[0].index = 0;
+   
+   int n_gc = data->fresh_c - data->conj_fresh_c;
+   int64_t out_dims[1];
+   out_dims[0] = n_gc;
+   data->output_values[0] = TF_NewTensor(TF_FLOAT, out_dims, 1, logits, 
+      n_gc*sizeof(float), idle_deallocator, NULL);
+}
+
+static void tensor_eval(EnigmaWeightTfParam_p data)
+{
+   TF_Status* status = TF_NewStatus();
+
+   TF_SessionRun(
+       data->session,
+       // RunOptions
+       NULL, //data->run,
+       // Input tensors
+       data->inputs, 
+       data->input_values, 
+       25, 
+       // Output tensors
+       data->outputs, 
+       data->output_values, 
+       1, 
+       // Target operations
+       NULL, 
+       0, 
+       // RunMetadata
+       NULL,
+       // Output status
+       status
+   );
+   
+   if (TF_GetCode(status) != TF_OK)
+   {
+      Error("Enigma: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
+   }
+
+   TF_DeleteStatus(status);
+}
+
+static void tensor_free(EnigmaWeightTfParam_p data)
+{
+   for (int i=0; i<25; i++)
+   {
+      TF_DeleteTensor(data->input_values[i]);
+      data->input_values[i] = NULL;
+      data->inputs[i].oper = NULL;
+   }
+
+   TF_DeleteTensor(data->output_values[0]);
+   data->outputs[0].oper = NULL;
+}
+  
+static double tensor_transform(EnigmaWeightTfParam_p data)
+{
+   int n_gc = data->fresh_c - data->conj_fresh_c;
+   float* logits = TF_TensorData(data->output_values[0]);
+   //debug_vector_float("logits", logits, n_gc, "Squeeze", 0);
+
+   double val = logits[n_gc-1];
+   //return -val;
+   return (val > 0.0) ? 1 : 10;
 }
 
 static void extweight_init(EnigmaWeightTfParam_p data)
@@ -804,9 +990,10 @@ static void extweight_init(EnigmaWeightTfParam_p data)
       return;
    }
 
-   printf("Hello from TensorFlow C library version %s\n", TF_Version());
-   data->tmp_bank = TBAlloc(data->proofstate->signature);
+   fprintf(GlobalOut, "# ENIGMA-TF: TensorFlow C library version %s\n", TF_Version());
 
+   // process conjectures
+   data->tmp_bank = TBAlloc(data->proofstate->signature);
    data->conj_mode = true;
    anchor = data->proofstate->axioms->anchor;
    for (clause=anchor->succ; clause!=anchor; clause=clause->succ)
@@ -816,18 +1003,42 @@ static void extweight_init(EnigmaWeightTfParam_p data)
          names_update_clause(clause, data);
       }
    }
-
    data->conj_mode = false;
    data->conj_maxvar = data->maxvar; // save maxvar to restore
    names_reset(data);
-   data->inited = true;
 
-   /*
-   fprintf(GlobalOut, "# ENIGMA: TensorFlow(Mirecek) model '%s' loaded. (%s: %ld; conj_feats: %d; version: %ld)\n", 
-      data->model_filename, 
-      (data->enigmap->version & EFHashing) ? "hash_base" : "features", data->enigmap->feature_count, 
-      data->conj_features_count, data->enigmap->version);
-   */
+   // init tensorflow
+   data->graph = TF_NewGraph();
+   data->options = TF_NewSessionOptions();
+   data->run = TF_NewBuffer();
+   TF_Status* status = TF_NewStatus();
+
+   const char* tags[1] = {"serve", "cpu"};
+
+   TF_Buffer* config = TF_CreateConfig(0, 0, 1);
+   TF_SetConfig(data->options, config->data, config->length, status);
+   // TODO: free config
+
+   data->session = TF_LoadSessionFromSavedModel(
+      data->options, 
+      NULL, // NULL, // const TF_Buffer* run_options,
+      data->model_dirname, 
+      tags, 
+      2,
+      data->graph, 
+      NULL, // NULL, //TF_Buffer* meta_graph_def, 
+      status
+   );
+
+   if (TF_GetCode(status) != TF_OK)
+   {
+      Error("Enigma: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
+   }
+   TF_DeleteStatus(status);
+
+   fprintf(GlobalOut, "# ENIGMA: TensorFlow: model '%s' loaded.\n", 
+      data->model_dirname);
+   data->inited = true;
 }
 
 
@@ -858,10 +1069,6 @@ EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void)
    res->conj_tedges = PStackAlloc();
    res->conj_cedges = PStackAlloc();
 
-   res->ini_nodes = PStackAlloc(); 
-   res->ini_symbols = PStackAlloc(); 
-   res->ini_clauses = PStackAlloc(); 
-
    res->maxvar = 0;
    res->tmp_bank = NULL;
 
@@ -871,6 +1078,11 @@ EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void)
 void EnigmaWeightTfParamFree(EnigmaWeightTfParam_p junk)
 {
    free(junk->model_dirname);
+   
+   if (!junk->inited)
+   {
+      return;
+   }
 
    free_edges(junk->tedges);
    free_edges(junk->cedges);
@@ -881,15 +1093,28 @@ void EnigmaWeightTfParamFree(EnigmaWeightTfParam_p junk)
    PStackFree(junk->conj_tedges);
    PStackFree(junk->conj_cedges);
 
-   PStackFree(junk->ini_nodes);
-   PStackFree(junk->ini_symbols);
-   PStackFree(junk->ini_clauses);
-
    if (junk->tmp_bank)
    {
       TBFree(junk->tmp_bank);
       junk->tmp_bank = NULL;
    }
+   
+   // terminate
+   TF_Status* status = TF_NewStatus();
+   TF_CloseSession(junk->session, status);
+   if (TF_GetCode(status) != TF_OK)
+   {
+      Error("ENIGMA: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
+   }
+   TF_DeleteSession(junk->session, status);
+   if (TF_GetCode(status) != TF_OK)
+   {
+      Error("ENIGMA: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
+   }
+   TF_DeleteSessionOptions(junk->options);
+   TF_DeleteGraph(junk->graph);
+   TF_DeleteStatus(status);
+   TF_DeleteBuffer(junk->run);
 
    EnigmaWeightTfParamCellFree(junk);
 }
@@ -942,22 +1167,39 @@ WFCB_p EnigmaWeightTfInit(
 }
 
 double EnigmaWeightTfCompute(void* data, Clause_p clause)
-{
+{  
+   static int step = 0;
+
    EnigmaWeightTfParam_p local = data;
    local->init_fun(data);
 
-   ClausePrint(GlobalOut, clause, true);
-   fprintf(GlobalOut, "\n");
+   // prepare
+   // encode
+   // evaluate
+   // transform
 
    names_update_clause(clause, local);
-   debug_symbols(local);
-   debug_terms(local);
-   debug_edges(local);
-   tensor_fill(local);
+   //debug_symbols(local);
+   //debug_terms(local);
+   //debug_edges(local);
+   tensor_fill_input(local);
+   tensor_fill_output(local);
+   tensor_eval(local);
+   double weight = tensor_transform(local);
+   tensor_free(local);
+  
+   step++;
+   if (step > 100) 
+   {
+      step = 0;
+      names_reset(local);
+   }
 
-   names_reset(data);
+   //fprintf(GlobalOut, "#TF#EVAL# %+.1f= ", weight);
+   //ClausePrint(GlobalOut, clause, true);
+   //fprintf(GlobalOut, "\n");
 
-   return 1.0;
+   return weight;
 }
 
 void EnigmaWeightTfExit(void* data)
