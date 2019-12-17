@@ -1013,7 +1013,7 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    data->run = TF_NewBuffer();
    TF_Status* status = TF_NewStatus();
 
-   const char* tags[1] = {"serve", "cpu"};
+   const char* tags[1] = {"serve"};
 
    TF_Buffer* config = TF_CreateConfig(0, 0, 1);
    TF_SetConfig(data->options, config->data, config->length, status);
@@ -1024,7 +1024,7 @@ static void extweight_init(EnigmaWeightTfParam_p data)
       NULL, // NULL, // const TF_Buffer* run_options,
       data->model_dirname, 
       tags, 
-      2,
+      1,
       data->graph, 
       NULL, // NULL, //TF_Buffer* meta_graph_def, 
       status
