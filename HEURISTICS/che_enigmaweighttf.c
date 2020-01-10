@@ -36,6 +36,8 @@ Changes
 /*                         Internal Functions                          */
 /*---------------------------------------------------------------------*/
 
+//#define DEBUG_ETF
+
 static long number_symbol(FunCode sym, EnigmaWeightTfParam_p data)
 {
    NumTree_p node;
@@ -298,15 +300,16 @@ static void names_update_clause(Clause_p clause, EnigmaWeightTfParam_p data)
       data->fresh_c++;
    }
 
-   //DEBUG:
+#ifdef DEBUG_ETF
    fprintf(GlobalOut, "#TF# Clause c%ld: ", cid);
    ClausePrint(GlobalOut, clause, true);
    fprintf(GlobalOut, "\n");
-   //
+#endif
 
    ClauseFree(clause0);
 }
 
+#ifdef DEBUG_ETF
 static void debug_symbols(EnigmaWeightTfParam_p data)
 {  
    PStack_p stack;
@@ -407,7 +410,6 @@ static void debug_vector_float(char* name, float* vals, int len, char* tfid, int
    fprintf(GlobalOut, "\t%s[%d] = [ ", name, len);
    for (int i=0; i<len; i++)
    {
-      //fprintf(GlobalOut, "%d:%.02f%s", i, vals[i], (i<len-1) ? ", " : " ]\n");
       fprintf(GlobalOut, "%.02f%s", vals[i], (i<len-1) ? ", " : " ]\n");
    }
 }
@@ -418,7 +420,6 @@ static void debug_vector_int32(char* name, int32_t* vals, int len, char* tfid, i
    fprintf(GlobalOut, "\t%s[%d] = [ ", name, len);
    for (int i=0; i<len; i++)
    {
-      //fprintf(GlobalOut, "%d:%d%s", i, vals[i], (i<len-1) ? ", " : " ]\n");
       fprintf(GlobalOut, "%d%s", vals[i], (i<len-1) ? ", " : " ]\n");
    }
 }
@@ -430,7 +431,6 @@ static void debug_matrix(char* name, int32_t* vals, int dimx, int dimy, char* tf
    int idx = 0;
    for (int x=0; x<dimx; x++)
    {
-      //fprintf(GlobalOut, "%d:[", x);
       fprintf(GlobalOut, "[");
       for (int y=0; y<dimy; y++)
       {
@@ -439,6 +439,7 @@ static void debug_matrix(char* name, int32_t* vals, int dimx, int dimy, char* tf
       fprintf(GlobalOut, "%s", (x<dimx-1) ? ", " : " ]\n");
    }
 }
+#endif
 
 static void free_edges(PStack_p stack)
 {
@@ -761,7 +762,9 @@ void set_input_vector_int32(int idx, int size, char* id, int32_t* values,
    data->input_values[idx] = TF_NewTensor(
       TF_INT32, dims, 1, values, size*sizeof(int32_t), idle_deallocator, NULL);
    
+#ifdef DEBUG_ETF 
    debug_vector_int32(id, values, size, name, idx);
+#endif
 }
 
 void set_input_vector_float(int idx, int size, char* id, float* values, 
@@ -775,7 +778,9 @@ void set_input_vector_float(int idx, int size, char* id, float* values,
    data->input_values[idx] = TF_NewTensor(
       TF_FLOAT, dims, 1, values, size*sizeof(float), idle_deallocator, NULL);
    
+#ifdef DEBUG_ETF 
    debug_vector_float(id, values, size, name, idx);
+#endif
 }
 
 void set_input_matrix(int idx, int dimx, int dimy, char* id, int32_t* values, 
@@ -790,11 +795,13 @@ void set_input_matrix(int idx, int dimx, int dimy, char* id, int32_t* values,
    int64_t size = dimx * dimy;
    data->input_values[idx] = TF_NewTensor(
       TF_INT32, dims, 2, values, size*sizeof(int32_t), idle_deallocator, NULL);
-   
+  
+#ifdef DEBUG_ETF 
    debug_matrix(id, values, dimx, dimy, name, idx);
+#endif
 }
 
-#define MAXSIZE 2048
+#define MAXSIZE 20480
 
 static void tensor_fill_input(EnigmaWeightTfParam_p data)
 {
@@ -970,7 +977,9 @@ static double tensor_transform(EnigmaWeightTfParam_p data)
 {
    int n_gc = data->fresh_c - data->conj_fresh_c;
    float* logits = TF_TensorData(data->output_values[0]);
+#ifdef DEBUG_ETF
    debug_vector_float("logits", logits, n_gc, "Squeeze", 0);
+#endif
 
    double val = logits[n_gc-1];
    //return -val;
@@ -1176,9 +1185,11 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause)
    // transform
 
    names_update_clause(clause, local);
+#ifdef DEBUG_ETF
    debug_symbols(local);
    debug_terms(local);
    debug_edges(local);
+#endif
    tensor_fill_input(local);
    tensor_fill_output(local);
    tensor_eval(local);
@@ -1189,12 +1200,14 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause)
    if (step >= 100) 
    {
       step = 0;
-      names_reset(local);
    }
+     names_reset(local);
 
+#ifdef DEBUG_ETF
    fprintf(GlobalOut, "#TF#EVAL# %+.1f= ", weight);
    ClausePrint(GlobalOut, clause, true);
    fprintf(GlobalOut, "\n");
+#endif
 
    return weight;
 }
