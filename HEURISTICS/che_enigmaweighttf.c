@@ -1220,9 +1220,10 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
    tensor_fill_output(local);
    tensor_eval(local);
    
-   int n_gc = local->fresh_c - local->conj_fresh_c;
    float* logits = TF_TensorData(local->output_values[0]);
+   assert((local->fresh_c - local->conj_fresh_c) == set->members);
 #ifdef DEBUG_ETF
+   int n_gc = local->fresh_c - local->conj_fresh_c;
    debug_vector_float("logits", logits, n_gc, "Squeeze", 0);
    fprintf(GlobalOut, "#TF#QUERY# ng_c = %d; members = %ld\n", n_gc, set->members);
 #endif
