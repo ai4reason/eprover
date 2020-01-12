@@ -125,6 +125,7 @@ Clause_p clause_copy_meta(Clause_p clause)
    handle->proof_size  = clause->proof_size;
    handle->pred        = NULL;
    handle->succ        = NULL;
+   handle->tf_weight   = clause->tf_weight;
 
    return handle;
 }
