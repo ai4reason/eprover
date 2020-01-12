@@ -23,6 +23,7 @@ Changes
 
 #include "cco_proofproc.h"
 #include <picosat.h>
+#include "che_enigmaweighttf.h"
 
 
 
@@ -596,9 +597,26 @@ static void generate_new_clauses(ProofState_p state, ProofControl_p
 
 void eval_clause_set(ProofState_p state, ProofControl_p control)
 {
+   static ClauseSet_p tf_eval_cache = NULL;
+
+   if (!tf_eval_cache)
+   {  
+      tf_eval_cache = ClauseSetAlloc();
+   }
+
    Clause_p handle;
    assert(state);
    assert(control);
+
+   if (state->unprocessed->members > 0)
+   {
+      ClauseSetInsertSet(tf_eval_cache, state->eval_store);
+      if (tf_eval_cache->members >= ETF_QUERY_CLAUSES)
+      {
+         EnigmaComputeEvals(tf_eval_cache, NULL);
+         ClauseSetInsertSet(state->eval_store, tf_eval_cache);
+      }
+   }
 
    for(handle = state->eval_store->anchor->succ;
        handle != state->eval_store->anchor;

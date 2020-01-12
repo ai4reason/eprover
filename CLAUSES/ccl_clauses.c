@@ -268,6 +268,7 @@ Clause_p EmptyClauseAlloc(void)
    handle->set         = NULL;
    handle->pred        = NULL;
    handle->succ        = NULL;
+   handle->tf_weight   = 0.0;
 
    return handle;
 }

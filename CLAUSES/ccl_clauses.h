@@ -164,6 +164,7 @@ typedef struct clause_cell
    struct clausesetcell* set;         /* Is the clause in a set? */
    struct clause_cell*   pred;        /* For clause sets = doubly  */
    struct clause_cell*   succ;        /* linked lists */
+   double                tf_weight;
 }ClauseCell, *Clause_p;
 
 /*---------------------------------------------------------------------*/

@@ -32,11 +32,14 @@ Changes
 /*                      Forward Declarations                           */
 /*---------------------------------------------------------------------*/
 
+// FIXME: This will not work with different Tensorflow model!
+static EnigmaWeightTfParam_p saved_local = NULL;
+
+
 /*---------------------------------------------------------------------*/
 /*                         Internal Functions                          */
 /*---------------------------------------------------------------------*/
 
-//#define DEBUG_ETF
 
 static long number_symbol(FunCode sym, EnigmaWeightTfParam_p data)
 {
@@ -801,35 +804,33 @@ void set_input_matrix(int idx, int dimx, int dimy, char* id, int32_t* values,
 #endif
 }
 
-#define MAXSIZE 20480
-
 static void tensor_fill_input(EnigmaWeightTfParam_p data)
 {
-   static int32_t ini_nodes[MAXSIZE];
-   static int32_t ini_symbols[MAXSIZE];
-   static int32_t ini_clauses[MAXSIZE];
-   static int32_t clause_inputs_data[MAXSIZE];
-   static int32_t clause_inputs_lens[MAXSIZE];
-   static int32_t node_c_inputs_data[MAXSIZE];
-   static int32_t node_c_inputs_lens[MAXSIZE];
-   static int32_t symbol_inputs_nodes[3*MAXSIZE]; 
-   static int32_t symbol_inputs_lens[MAXSIZE]; 
-   static int32_t node_inputs_1_symbols[MAXSIZE];
-   static int32_t node_inputs_1_nodes[2*MAXSIZE];
-   static int32_t node_inputs_1_lens[MAXSIZE];
-   static int32_t node_inputs_2_symbols[MAXSIZE];
-   static int32_t node_inputs_2_nodes[2*MAXSIZE];
-   static int32_t node_inputs_2_lens[MAXSIZE];
-   static int32_t node_inputs_3_symbols[MAXSIZE];
-   static int32_t node_inputs_3_nodes[2*MAXSIZE];
-   static int32_t node_inputs_3_lens[MAXSIZE];
-   static float symbol_inputs_sgn[MAXSIZE]; 
-   static float node_inputs_1_sgn[MAXSIZE];
-   static float node_inputs_2_sgn[MAXSIZE];
-   static float node_inputs_3_sgn[MAXSIZE];
-   static int32_t prob_segments_lens[MAXSIZE];
-   static int32_t prob_segments_data[MAXSIZE];
-   static int32_t labels[MAXSIZE];
+   static int32_t ini_nodes[ETF_TENSOR_SIZE];
+   static int32_t ini_symbols[ETF_TENSOR_SIZE];
+   static int32_t ini_clauses[ETF_TENSOR_SIZE];
+   static int32_t clause_inputs_data[ETF_TENSOR_SIZE];
+   static int32_t clause_inputs_lens[ETF_TENSOR_SIZE];
+   static int32_t node_c_inputs_data[ETF_TENSOR_SIZE];
+   static int32_t node_c_inputs_lens[ETF_TENSOR_SIZE];
+   static int32_t symbol_inputs_nodes[3*ETF_TENSOR_SIZE]; 
+   static int32_t symbol_inputs_lens[ETF_TENSOR_SIZE]; 
+   static int32_t node_inputs_1_symbols[ETF_TENSOR_SIZE];
+   static int32_t node_inputs_1_nodes[2*ETF_TENSOR_SIZE];
+   static int32_t node_inputs_1_lens[ETF_TENSOR_SIZE];
+   static int32_t node_inputs_2_symbols[ETF_TENSOR_SIZE];
+   static int32_t node_inputs_2_nodes[2*ETF_TENSOR_SIZE];
+   static int32_t node_inputs_2_lens[ETF_TENSOR_SIZE];
+   static int32_t node_inputs_3_symbols[ETF_TENSOR_SIZE];
+   static int32_t node_inputs_3_nodes[2*ETF_TENSOR_SIZE];
+   static int32_t node_inputs_3_lens[ETF_TENSOR_SIZE];
+   static float symbol_inputs_sgn[ETF_TENSOR_SIZE]; 
+   static float node_inputs_1_sgn[ETF_TENSOR_SIZE];
+   static float node_inputs_2_sgn[ETF_TENSOR_SIZE];
+   static float node_inputs_3_sgn[ETF_TENSOR_SIZE];
+   static int32_t prob_segments_lens[ETF_TENSOR_SIZE];
+   static int32_t prob_segments_data[ETF_TENSOR_SIZE];
+   static int32_t labels[ETF_TENSOR_SIZE];
    
    int n_ce = data->cedges->current + data->conj_cedges->current;
    int n_te = data->tedges->current + data->conj_tedges->current;
@@ -837,9 +838,9 @@ static void tensor_fill_input(EnigmaWeightTfParam_p data)
    int n_c = data->fresh_c;
    int n_t = data->fresh_t;
    int n_gc = n_c - data->conj_fresh_c; // goal clauses (non-conjecture)
-   if (n_te > MAXSIZE)
+   if (n_te > ETF_TENSOR_SIZE)
    {
-      Error("Enigma-TF: Too many term edges (required: %d; max: %d).\nRecompile with increased MAXSIZE.", OTHER_ERROR, n_te, MAXSIZE);
+      Error("Enigma-TF: Too many term edges (required: %d; max: %d).\nRecompile with increased ETF_TENSOR_SIZE.", OTHER_ERROR, n_te, ETF_TENSOR_SIZE);
    }
 
    tensor_fill_ini_nodes(ini_nodes, data->conj_terms, data);
@@ -915,7 +916,7 @@ static void tensor_fill_input(EnigmaWeightTfParam_p data)
 
 static void tensor_fill_output(EnigmaWeightTfParam_p data)
 {
-   static float logits[MAXSIZE];
+   static float logits[ETF_TENSOR_SIZE];
 
    data->outputs[0].oper = TF_GraphOperationByName(data->graph, "Squeeze");
    data->outputs[0].index = 0;
@@ -973,6 +974,7 @@ static void tensor_free(EnigmaWeightTfParam_p data)
    data->outputs[0].oper = NULL;
 }
   
+/*
 static double tensor_transform(EnigmaWeightTfParam_p data)
 {
    int n_gc = data->fresh_c - data->conj_fresh_c;
@@ -985,6 +987,7 @@ static double tensor_transform(EnigmaWeightTfParam_p data)
    //return -val;
    return (val > 0.0) ? 1 : 10;
 }
+*/
 
 static void extweight_init(EnigmaWeightTfParam_p data)
 {
@@ -1164,6 +1167,8 @@ WFCB_p EnigmaWeightTfInit(
    
    data->model_dirname = model_dirname;
    data->len_mult = len_mult;
+
+   saved_local = data;
    
    return WFCBAlloc(
       EnigmaWeightTfCompute, 
@@ -1174,34 +1179,14 @@ WFCB_p EnigmaWeightTfInit(
 
 double EnigmaWeightTfCompute(void* data, Clause_p clause)
 {  
-   static int step = 0;
-
    EnigmaWeightTfParam_p local = data;
    local->init_fun(data);
 
-   // prepare
-   // encode
-   // evaluate
-   // transform
-
-   names_update_clause(clause, local);
-#ifdef DEBUG_ETF
-   debug_symbols(local);
-   debug_terms(local);
-   debug_edges(local);
-#endif
-   tensor_fill_input(local);
-   tensor_fill_output(local);
-   tensor_eval(local);
-   double weight = tensor_transform(local);
-   tensor_free(local);
-  
-   step++;
-   if (step >= 100) 
+   double weight = clause->tf_weight;
+   if (weight == 0.0)
    {
-      step = 0;
+      weight = ClauseWeight(clause,1,1,1,1,1,1,true);
    }
-     names_reset(local);
 
 #ifdef DEBUG_ETF
    fprintf(GlobalOut, "#TF#EVAL# %+.1f= ", weight);
@@ -1211,6 +1196,47 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause)
 
    return weight;
 }
+
+void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
+{
+   if (!local)
+   {
+      local = saved_local;
+   }
+   local->init_fun(local);
+   names_reset(local);
+
+   for (Clause_p handle=set->anchor->succ; handle!=set->anchor; handle=handle->succ)
+   {
+      names_update_clause(handle, local);
+   }
+
+#ifdef DEBUG_ETF
+   debug_symbols(local);
+   debug_terms(local);
+   debug_edges(local);
+#endif
+   tensor_fill_input(local);
+   tensor_fill_output(local);
+   tensor_eval(local);
+   
+   int n_gc = local->fresh_c - local->conj_fresh_c;
+   float* logits = TF_TensorData(local->output_values[0]);
+#ifdef DEBUG_ETF
+   debug_vector_float("logits", logits, n_gc, "Squeeze", 0);
+   fprintf(GlobalOut, "#TF#QUERY# ng_c = %d; members = %ld\n", n_gc, set->members);
+#endif
+
+   int idx = 0;
+   for (Clause_p handle=set->anchor->succ; handle!=set->anchor; handle=handle->succ)
+   {
+      handle->tf_weight = (logits[idx++] > 0.0) ? 1 : 10;
+   }
+
+   tensor_free(local);
+   names_reset(local);
+}
+
 
 void EnigmaWeightTfExit(void* data)
 {

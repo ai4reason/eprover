@@ -34,6 +34,12 @@ Changes
 /*                    Data type declarations                           */
 /*---------------------------------------------------------------------*/
 
+#define ETF_TENSOR_SIZE (100*1024)
+#define ETF_QUERY_CLAUSES 100
+//#define ETF_CONTEXT_CLAUSES 100 
+#define DEBUG_ETF
+
+
 typedef struct enigmaweighttfparamcell
 {
    OCB_p        ocb;
@@ -115,6 +121,8 @@ WFCB_p EnigmaWeightTfInit(
    double len_mult);
 
 double EnigmaWeightTfCompute(void* data, Clause_p clause);
+
+void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local);
 
 void EnigmaWeightTfExit(void* data);
 
