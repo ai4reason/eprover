@@ -1189,7 +1189,7 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause)
    }
 
 #ifdef DEBUG_ETF
-   fprintf(GlobalOut, "#TF#EVAL# %+.1f(%f)= ", weight, clause->tf_weight);
+   fprintf(GlobalOut, "#TF#EVAL# %+.1f(%.1f)= ", weight, clause->tf_weight);
    ClausePrint(GlobalOut, clause, true);
    fprintf(GlobalOut, "\n");
 #endif

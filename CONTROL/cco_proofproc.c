@@ -1678,7 +1678,7 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
 
       if (ClauseSetEmpty(state->unprocessed))
       {
-         fprintf(GlobalOut, "#ENIGMA#TF# Flushing cached clauses: %ld", state->unprocessed->members);
+         fprintf(GlobalOut, "#TF# Flushing cached clauses: %ld unprocessed\n", state->unprocessed->members);
          Clause_p handle;
          eval_clause_set(state, control);
          while((handle = ClauseSetExtractFirst(state->eval_store)))
@@ -1688,7 +1688,7 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
 
             ClauseSetInsert(state->unprocessed, handle);
          }
-         fprintf(GlobalOut, "#ENIGMA#TF# Cached clauses flushed: %ld", state->unprocessed->members);
+         fprintf(GlobalOut, "#TF# Cached clauses flushed: %ld unprocessed\n", state->unprocessed->members);
       }
    }
    return unsatisfiable;
