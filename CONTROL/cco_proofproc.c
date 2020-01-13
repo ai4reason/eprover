@@ -1506,7 +1506,7 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
    check_ac_status(state, control, pclause->clause);
 
    document_processing(pclause->clause);
-   EnigmaClauseProcessing(pclause->clause, NULL);
+   EnigmaContextAdd(pclause->clause, NULL);
    state->proc_non_trivial_count++;
 
    resclause = replacing_inferences(state, control, pclause);

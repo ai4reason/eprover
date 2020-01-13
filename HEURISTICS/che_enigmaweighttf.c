@@ -530,7 +530,7 @@ static void tensor_fill_ini_clauses(int32_t* vals, EnigmaWeightTfParam_p data)
 {
    for (int i=0; i<data->fresh_c; i++)
    {
-      vals[i] = (i < data->conj_fresh_c) ? 0 : 1;
+      vals[i] = (i < (data->conj_fresh_c - data->context_cnt)) ? 0 : 1;
    }
 }
 
@@ -742,9 +742,9 @@ static void tensor_fill_query(
    int32_t* prob_segments_data, 
    EnigmaWeightTfParam_p data)
 {
-   int n_q = data->fresh_c - data->conj_fresh_c; 
+   int n_q = data->fresh_c - (data->conj_fresh_c - data->context_cnt); 
    prob_segments_lens[0] = 1 + n_q;
-   prob_segments_data[0] = data->conj_fresh_c;
+   prob_segments_data[0] = data->conj_fresh_c - data->context_cnt;
    for (int i=0; i<n_q; i++)
    {
       prob_segments_data[1+i] = 1;
@@ -838,7 +838,7 @@ static void tensor_fill_input(EnigmaWeightTfParam_p data)
    int n_s = data->fresh_s;
    int n_c = data->fresh_c;
    int n_t = data->fresh_t;
-   int n_gc = n_c - data->conj_fresh_c; // goal clauses (non-conjecture)
+   int n_q = n_c - (data->conj_fresh_c - data->context_cnt); // query clauses (evaluated and context clauses)
    if (n_te > ETF_TENSOR_SIZE)
    {
       Error("Enigma-TF: Too many term edges (required: %d; max: %d).\nRecompile with increased ETF_TENSOR_SIZE.", OTHER_ERROR, n_te, ETF_TENSOR_SIZE);
@@ -907,8 +907,8 @@ static void tensor_fill_input(EnigmaWeightTfParam_p data)
    set_input_vector_int32(16, n_c, "clause_inputs_lens", clause_inputs_lens, "GraphPlaceholder/GraphEdges_1/segment_lens", data);
    set_input_vector_int32(17, n_ce, "clause_inputs_data", clause_inputs_data, "GraphPlaceholder/GraphEdges_1/data", data);
    set_input_vector_int32(18, 1, "prob_segments_lens", prob_segments_lens, "segment_lens", data);
-   set_input_vector_int32(19, 1+n_gc, "prob_segments_data", prob_segments_data, "segment_data", data);
-   set_input_vector_int32(20, n_gc, "labels", labels, "Placeholder", data);
+   set_input_vector_int32(19, 1+n_q, "prob_segments_data", prob_segments_data, "segment_data", data);
+   set_input_vector_int32(20, n_q, "labels", labels, "Placeholder", data);
    set_input_matrix(21, n_i1, 2, "node_inputs_1_nodes", node_inputs_1_nodes, "GraphPlaceholder/GraphHyperEdgesA/nodes", data);
    set_input_matrix(22, n_i2, 2, "node_inputs_2_nodes", node_inputs_2_nodes, "GraphPlaceholder/GraphHyperEdgesA_1/nodes", data);
    set_input_matrix(23, n_i3, 2, "node_inputs_3_nodes", node_inputs_3_nodes, "GraphPlaceholder/GraphHyperEdgesA_2/nodes", data);
@@ -922,11 +922,11 @@ static void tensor_fill_output(EnigmaWeightTfParam_p data)
    data->outputs[0].oper = TF_GraphOperationByName(data->graph, "Squeeze");
    data->outputs[0].index = 0;
    
-   int n_gc = data->fresh_c - data->conj_fresh_c;
+   int n_q = data->fresh_c - (data->conj_fresh_c - data->context_cnt);
    int64_t out_dims[1];
-   out_dims[0] = n_gc;
+   out_dims[0] = n_q;
    data->output_values[0] = TF_NewTensor(TF_FLOAT, out_dims, 1, logits, 
-      n_gc*sizeof(float), idle_deallocator, NULL);
+      n_q*sizeof(float), idle_deallocator, NULL);
 }
 
 static void tensor_eval(EnigmaWeightTfParam_p data)
@@ -978,13 +978,13 @@ static void tensor_free(EnigmaWeightTfParam_p data)
 /*
 static double tensor_transform(EnigmaWeightTfParam_p data)
 {
-   int n_gc = data->fresh_c - data->conj_fresh_c;
+   int n_q = data->fresh_c - data->conj_fresh_c;
    float* logits = TF_TensorData(data->output_values[0]);
 #ifdef DEBUG_ETF
-   debug_vector_float("logits", logits, n_gc, "Squeeze", 0);
+   debug_vector_float("logits", logits, n_q, "Squeeze", 0);
 #endif
 
-   double val = logits[n_gc-1];
+   double val = logits[n_q-1];
    //return -val;
    return (val > 0.0) ? 1 : 10;
 }
@@ -1000,9 +1000,7 @@ static void extweight_init(EnigmaWeightTfParam_p data)
       return;
    }
 
-   fprintf(GlobalOut, "# ENIGMA-TF: TensorFlow C library version %s (query=%d,context=%d,tensor=%d),\n", 
-      TF_Version(), ETF_QUERY_CLAUSES, ETF_CONTEXT_CLAUSES, ETF_TENSOR_SIZE);
-
+   fprintf(GlobalOut, "# ENIGMA: TensorFlow C library version %s\n", TF_Version());
    // process conjectures
    data->tmp_bank = TBAlloc(data->proofstate->signature);
    data->conj_mode = true;
@@ -1047,8 +1045,9 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    }
    TF_DeleteStatus(status);
 
-   fprintf(GlobalOut, "# ENIGMA: TensorFlow: model '%s' loaded.\n", 
-      data->model_dirname);
+   fprintf(GlobalOut, "# ENIGMA: TensorFlow: model '%s' loaded (query=%d; context=%d).\n", 
+      data->model_dirname, ETF_QUERY_CLAUSES, ETF_CONTEXT_CLAUSES);
+
    data->inited = true;
 }
 
@@ -1186,10 +1185,14 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause)
    EnigmaWeightTfParam_p local = data;
    local->init_fun(data);
 
-   double weight = clause->tf_weight;
-   if (weight == 0.0)
+   double weight;
+   if (clause->tf_weight == 0.0)
    {
       weight = ClauseWeight(clause,1,1,1,1,1,1,true);
+   }
+   else
+   {
+      weight = (clause->tf_weight > 0.0) ? 1 : 10;
    }
 
 #ifdef DEBUG_ETF
@@ -1226,24 +1229,24 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
    tensor_eval(local);
    
    float* logits = TF_TensorData(local->output_values[0]);
-   assert((local->fresh_c - local->conj_fresh_c) == set->members);
 #ifdef DEBUG_ETF
-   int n_gc = local->fresh_c - local->conj_fresh_c;
-   debug_vector_float("logits", logits, n_gc, "Squeeze", 0);
-   fprintf(GlobalOut, "#TF#QUERY# ng_c = %d; members = %ld\n", n_gc, set->members);
+   int n_q = local->fresh_c - (local->conj_fresh_c - local->context_cnt);
+   assert(n_q == set->members + local->context_cnt);
+   debug_vector_float("logits", logits, n_q, "Squeeze", 0);
+   fprintf(GlobalOut, "#TF#QUERY# query = %d; eval = %ld; context = %ld\n", n_q, set->members, local->context_cnt);
 #endif
 
-   int idx = 0;
+   int idx = local->context_cnt;
    for (Clause_p handle=set->anchor->succ; handle!=set->anchor; handle=handle->succ)
    {
-      handle->tf_weight = (logits[idx++] > 0.0) ? 1 : 10;
+      handle->tf_weight = logits[idx++];
    }
 
    tensor_free(local);
    names_reset(local);
 }
 
-void EnigmaClauseProcessing(Clause_p clause, EnigmaWeightTfParam_p local)
+void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local)
 {
    if (!local)
    {
@@ -1262,6 +1265,11 @@ void EnigmaClauseProcessing(Clause_p clause, EnigmaWeightTfParam_p local)
    local->conj_mode = false;
    local->conj_maxvar = local->maxvar; // save maxvar to restore
    names_reset(local);
+#ifdef DEBUG_ETF
+   fprintf(GlobalOut, "#TF# Context clause %ld added: ", local->context_cnt);
+   ClausePrint(GlobalOut, clause, true);
+   fprintf(GlobalOut, "\n");
+#endif
    local->context_cnt++;
 }
 

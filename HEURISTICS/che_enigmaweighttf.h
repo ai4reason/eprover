@@ -36,7 +36,7 @@ Changes
 
 #define ETF_TENSOR_SIZE (10*1024*1024)
 #define ETF_QUERY_CLAUSES 512
-#define ETF_CONTEXT_CLAUSES 256
+#define ETF_CONTEXT_CLAUSES 512
 //#define DEBUG_ETF
 
 
@@ -127,7 +127,7 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause);
 
 void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local);
 
-void EnigmaClauseProcessing(Clause_p clause, EnigmaWeightTfParam_p local);
+void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local);
 
 void EnigmaWeightTfExit(void* data);
 
