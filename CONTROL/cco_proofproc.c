@@ -609,7 +609,7 @@ void eval_clause_set(ProofState_p state, ProofControl_p control)
    assert(control);
 
    ClauseSetInsertSet(tf_eval_cache, state->eval_store);
-   if (tf_eval_cache->members >= ETF_QUERY_CLAUSES || state->unprocessed->members == 0)
+   if (tf_eval_cache->members >= ETF_QUERY_CLAUSES || ClauseSetEmpty(state->unprocessed))
    {
       EnigmaComputeEvals(tf_eval_cache, NULL);
       ClauseSetInsertSet(state->eval_store, tf_eval_cache);
@@ -1674,6 +1674,21 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
             PStackPushP(state->extract_roots, unsatisfiable);
             break;
          }
+      }
+
+      if (ClauseSetEmpty(state->unprocessed))
+      {
+         fprintf(GlobalOut, "#ENIGMA#TF# Flushing cached clauses: %ld", state->unprocessed->members);
+         Clause_p handle;
+         eval_clause_set(state, control);
+         while((handle = ClauseSetExtractFirst(state->eval_store)))
+         {
+            ClauseDelProp(handle, CPIsOriented);
+            DocClauseQuoteDefault(6, handle, "eval");
+
+            ClauseSetInsert(state->unprocessed, handle);
+         }
+         fprintf(GlobalOut, "#ENIGMA#TF# Cached clauses flushed: %ld", state->unprocessed->members);
       }
    }
    return unsatisfiable;
