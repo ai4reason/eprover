@@ -36,7 +36,7 @@ Changes
 
 #define ETF_TENSOR_SIZE (10*1024*1024)
 #define ETF_QUERY_CLAUSES 512
-//#define ETF_CONTEXT_CLAUSES 100 
+#define ETF_CONTEXT_CLAUSES 256
 //#define DEBUG_ETF
 
 
@@ -62,6 +62,9 @@ typedef struct enigmaweighttfparamcell
    long maxvar;
    PStack_p tedges;
    PStack_p cedges;
+
+   // context
+   long context_cnt;
 
    // conjecture edges
    bool conj_mode;
@@ -123,6 +126,8 @@ WFCB_p EnigmaWeightTfInit(
 double EnigmaWeightTfCompute(void* data, Clause_p clause);
 
 void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local);
+
+void EnigmaClauseProcessing(Clause_p clause, EnigmaWeightTfParam_p local);
 
 void EnigmaWeightTfExit(void* data);
 

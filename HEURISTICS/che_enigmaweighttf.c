@@ -33,6 +33,7 @@ Changes
 /*---------------------------------------------------------------------*/
 
 // FIXME: This will not work with different Tensorflow model!
+// (and neither will tensor_fill_input)!
 static EnigmaWeightTfParam_p saved_local = NULL;
 
 
@@ -999,7 +1000,8 @@ static void extweight_init(EnigmaWeightTfParam_p data)
       return;
    }
 
-   fprintf(GlobalOut, "# ENIGMA-TF: TensorFlow C library version %s\n", TF_Version());
+   fprintf(GlobalOut, "# ENIGMA-TF: TensorFlow C library version %s (query=%d,context=%d,tensor=%d),\n", 
+      TF_Version(), ETF_QUERY_CLAUSES, ETF_CONTEXT_CLAUSES, ETF_TENSOR_SIZE);
 
    // process conjectures
    data->tmp_bank = TBAlloc(data->proofstate->signature);
@@ -1068,6 +1070,8 @@ EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void)
    res->fresh_c = 0;
    res->tedges = PStackAlloc();
    res->cedges = PStackAlloc();
+
+   res->context_cnt = 0;
    
    res->conj_mode = false;
    res->conj_terms = NULL;
@@ -1201,6 +1205,7 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
 {
    if (!local)
    {
+      if (!saved_local) { return; }
       local = saved_local;
    }
    local->init_fun(local);
@@ -1236,6 +1241,28 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
 
    tensor_free(local);
    names_reset(local);
+}
+
+void EnigmaClauseProcessing(Clause_p clause, EnigmaWeightTfParam_p local)
+{
+   if (!local)
+   {
+      if (!saved_local) { return; }
+      local = saved_local;
+   }
+   if (local->context_cnt >= ETF_CONTEXT_CLAUSES)
+   {
+      return;
+   }
+   local->init_fun(local);
+
+   names_reset(local);
+   local->conj_mode = true;
+   names_update_clause(clause, local);
+   local->conj_mode = false;
+   local->conj_maxvar = local->maxvar; // save maxvar to restore
+   names_reset(local);
+   local->context_cnt++;
 }
 
 
