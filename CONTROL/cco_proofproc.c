@@ -608,14 +608,11 @@ void eval_clause_set(ProofState_p state, ProofControl_p control)
    assert(state);
    assert(control);
 
-   if (state->unprocessed->members > 0)
+   ClauseSetInsertSet(tf_eval_cache, state->eval_store);
+   if (tf_eval_cache->members >= ETF_QUERY_CLAUSES || state->unprocessed->members == 0)
    {
-      ClauseSetInsertSet(tf_eval_cache, state->eval_store);
-      if (tf_eval_cache->members >= ETF_QUERY_CLAUSES)
-      {
-         EnigmaComputeEvals(tf_eval_cache, NULL);
-         ClauseSetInsertSet(state->eval_store, tf_eval_cache);
-      }
+      EnigmaComputeEvals(tf_eval_cache, NULL);
+      ClauseSetInsertSet(state->eval_store, tf_eval_cache);
    }
 
    for(handle = state->eval_store->anchor->succ;
