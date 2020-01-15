@@ -35,7 +35,7 @@ Changes
 /*---------------------------------------------------------------------*/
 
 #define ETF_TENSOR_SIZE (10*1024*1024)
-#define ETF_QUERY_CLAUSES 512
+#define ETF_QUERY_CLAUSES 64
 #define ETF_CONTEXT_CLAUSES 512
 //#define DEBUG_ETF
 
