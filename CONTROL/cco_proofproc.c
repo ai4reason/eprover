@@ -34,6 +34,7 @@ Changes
 PERF_CTR_DEFINE(ParamodTimer);
 PERF_CTR_DEFINE(BWRWTimer);
 
+long DelayedEvalSize = 0;
 
 /*---------------------------------------------------------------------*/
 /*                      Forward Declarations                           */
@@ -601,7 +602,7 @@ void eval_clause_set(ProofState_p state, ProofControl_p control)
 
    if (!tf_eval_cache)
    {  
-      tf_eval_cache = ClauseSetAlloc();
+      tf_eval_cache = ClauseSetAlloc(); // FIXME: never freed, yeah...
    }
 
    Clause_p handle;
@@ -609,7 +610,7 @@ void eval_clause_set(ProofState_p state, ProofControl_p control)
    assert(control);
 
    ClauseSetInsertSet(tf_eval_cache, state->eval_store);
-   if (tf_eval_cache->members >= ETF_QUERY_CLAUSES || ClauseSetEmpty(state->unprocessed))
+   if (tf_eval_cache->members >= DelayedEvalSize || ClauseSetEmpty(state->unprocessed))
    {
       EnigmaComputeEvals(tf_eval_cache, NULL);
       ClauseSetInsertSet(state->eval_store, tf_eval_cache);

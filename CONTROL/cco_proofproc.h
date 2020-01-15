@@ -50,6 +50,7 @@ Changes
 PERF_CTR_DECL(ParamodTimer);
 PERF_CTR_DECL(BWRWTimer);
 
+extern long DelayedEvalSize;
 
 /* Collect term cells from temporary clause copies if their number
    reaches this. 10000 is big enough that it nearly never happens, 500

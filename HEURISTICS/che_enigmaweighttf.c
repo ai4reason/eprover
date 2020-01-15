@@ -21,6 +21,7 @@ Changes
 -----------------------------------------------------------------------*/
 
 #include "che_enigmaweighttf.h"
+#include "cco_proofproc.h"
 
 #include <tensorflow/c/c_api_experimental.h>
 
@@ -1045,8 +1046,9 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    }
    TF_DeleteStatus(status);
 
-   fprintf(GlobalOut, "# ENIGMA: TensorFlow: model '%s' loaded (query=%d; context=%d).\n", 
-      data->model_dirname, ETF_QUERY_CLAUSES, ETF_CONTEXT_CLAUSES);
+   fprintf(GlobalOut, "# ENIGMA: TensorFlow: model '%s' loaded (query=%ld; context=%ld; weigths=%s; len_mult=%f).\n", 
+      data->model_dirname, DelayedEvalSize, data->context_size,
+      (data->binary_weights ? "binary" : "real"), data->len_mult);
 
    data->inited = true;
 }
@@ -1144,6 +1146,10 @@ WFCB_p EnigmaWeightTfParse(
    AcceptInpTok(in, Comma);
    char* d_model = ParseFilename(in);
    AcceptInpTok(in, Comma);
+   long binary_weights = ParseInt(in);
+   AcceptInpTok(in, Comma);
+   long context_size = ParseInt(in);
+   AcceptInpTok(in, Comma);
    len_mult = ParseFloat(in);
    AcceptInpTok(in, CloseBracket);
 
@@ -1152,6 +1158,8 @@ WFCB_p EnigmaWeightTfParse(
       ocb,
       state,
       d_model,
+      binary_weights,
+      context_size,
       len_mult);
 }
 
@@ -1160,6 +1168,8 @@ WFCB_p EnigmaWeightTfInit(
    OCB_p ocb,
    ProofState_p proofstate,
    char* model_dirname,
+   long binary_weights,
+   long context_size,
    double len_mult)
 {
    EnigmaWeightTfParam_p data = EnigmaWeightTfParamAlloc();
@@ -1169,6 +1179,8 @@ WFCB_p EnigmaWeightTfInit(
    data->proofstate = proofstate;
    
    data->model_dirname = model_dirname;
+   data->binary_weights = binary_weights;
+   data->context_size = context_size;
    data->len_mult = len_mult;
 
    saved_local = data;
@@ -1186,15 +1198,24 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause)
    local->init_fun(data);
 
    double weight;
+   double length = ClauseWeight(clause,1,1,1,1,1,1,true);
    if (clause->tf_weight == 0.0)
    {
-      weight = ClauseWeight(clause,1,1,1,1,1,1,true);
+      weight = length;
    }
    else
    {
-      //weight = (clause->tf_weight > 0.0) ? 1 : 10;
-      weight = 2.0 - (clause->tf_weight / (1 + fabs(clause->tf_weight)));
+      if (local->binary_weights)
+      {
+         weight = (clause->tf_weight > 0.0) ? 1 : 10;
+      }
+      else
+      {
+         weight = 2.0 - (clause->tf_weight / (1 + fabs(clause->tf_weight)));
+      }
    }
+
+   weight += (local->len_mult * length);
 
 #ifdef DEBUG_ETF
    fprintf(GlobalOut, "#TF#EVAL# %+.5f(%.1f)= ", weight, clause->tf_weight);
@@ -1254,7 +1275,7 @@ void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local)
       if (!saved_local) { return; }
       local = saved_local;
    }
-   if (local->context_cnt >= ETF_CONTEXT_CLAUSES)
+   if (local->context_cnt >= local->context_size)
    {
       return;
    }

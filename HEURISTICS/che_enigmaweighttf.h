@@ -26,7 +26,6 @@ Changes
 
 #include <ccl_relevance.h>
 #include <che_refinedweight.h>
-//#include <che_enigma.h>
 
 #include <tensorflow/c/c_api.h>
 
@@ -35,8 +34,6 @@ Changes
 /*---------------------------------------------------------------------*/
 
 #define ETF_TENSOR_SIZE (10*1024*1024)
-#define ETF_QUERY_CLAUSES 64
-#define ETF_CONTEXT_CLAUSES 512
 //#define DEBUG_ETF
 
 
@@ -48,7 +45,10 @@ typedef struct enigmaweighttfparamcell
    long         tmp_bank_vars;
 
    char* model_dirname;
+   long binary_weights;
+   long context_size;
    double len_mult;
+
    bool inited;
 
    void   (*init_fun)(struct enigmaweighttfparamcell*);
@@ -121,6 +121,8 @@ WFCB_p EnigmaWeightTfInit(
    OCB_p ocb,
    ProofState_p proofstate,
    char* model_dirname,
+   long binary_weights,
+   long context_size,
    double len_mult);
 
 double EnigmaWeightTfCompute(void* data, Clause_p clause);
