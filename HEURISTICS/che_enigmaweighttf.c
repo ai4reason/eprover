@@ -268,52 +268,6 @@ static long names_update_term(Term_p term, EnigmaWeightTfParam_p data, long b)
    return tid;
 }
 
-static void names_update_clause(Clause_p clause, EnigmaWeightTfParam_p data)
-{
-   Clause_p clause0 = clause_fresh_copy(clause, data); 
-
-   long tid = -1;
-   long cid = (data->conj_mode) ? data->conj_fresh_c : data->fresh_c;
-   for (Eqn_p lit = clause0->literals; lit; lit = lit->next)
-   {
-      bool pos = EqnIsPositive(lit);
-      if (lit->rterm->f_code == SIG_TRUE_CODE)
-      {
-         tid = names_update_term(lit->lterm, data, pos ? 1 : -1);
-      }
-      else
-      {
-         Term_p term = TermTopAlloc(data->proofstate->signature->eqn_code, 2);
-         term->args[0] = lit->lterm;
-         term->args[1] = lit->rterm;
-         Term_p term1 = TBInsert(data->tmp_bank, term, DEREF_ALWAYS);
-         tid = names_update_term(term1, data, pos ? 1 : -1);
-         TermTopFree(term); 
-      }
-      edge_clause(cid, tid, data);
-   }
-   if (tid == -1)
-   {
-      return;
-   }
-   if (data->conj_mode)
-   {
-      data->conj_fresh_c++;
-   }
-   else
-   {
-      data->fresh_c++;
-   }
-
-#ifdef DEBUG_ETF
-   fprintf(GlobalOut, "#TF# Clause c%ld: ", cid);
-   ClausePrint(GlobalOut, clause, true);
-   fprintf(GlobalOut, "\n");
-#endif
-
-   ClauseFree(clause0);
-}
-
 #ifdef DEBUG_ETF
 static void debug_symbols(EnigmaWeightTfParam_p data)
 {  
@@ -453,28 +407,6 @@ static void free_edges(PStack_p stack)
       PDArray_p edge = PStackPopP(stack);
       PDArrayFree(edge);
    }
-}
-
-static void names_reset(EnigmaWeightTfParam_p data)
-{
-   if (data->terms)
-   {
-      NumTreeFree(data->terms);
-      data->terms = NULL;
-   }
-   if (data->syms)
-   {
-      NumTreeFree(data->syms);
-      data->syms = NULL;
-   }
-
-   free_edges(data->cedges);
-   free_edges(data->tedges);
-
-   data->fresh_t = data->conj_fresh_t;
-   data->fresh_s = data->conj_fresh_s;
-   data->fresh_c = data->conj_fresh_c;
-   data->maxvar = data->conj_maxvar;
 }
 
 static void tensor_fill_ini_nodes(int32_t* vals, NumTree_p syms, 
@@ -1010,12 +942,12 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    {
       if (ClauseQueryTPTPType(clause) == CPTypeNegConjecture) 
       {
-         names_update_clause(clause, data);
+         EnigmaTensorsUpdateClause(clause, data);
       }
    }
    data->conj_mode = false;
    data->conj_maxvar = data->maxvar; // save maxvar to restore
-   names_reset(data);
+   EnigmaTensorsReset(data);
 
    // init tensorflow
    data->graph = TF_NewGraph();
@@ -1057,6 +989,76 @@ static void extweight_init(EnigmaWeightTfParam_p data)
 /*---------------------------------------------------------------------*/
 /*                         Exported Functions                          */
 /*---------------------------------------------------------------------*/
+
+void EnigmaTensorsReset(EnigmaWeightTfParam_p data)
+{
+   if (data->terms)
+   {
+      NumTreeFree(data->terms);
+      data->terms = NULL;
+   }
+   if (data->syms)
+   {
+      NumTreeFree(data->syms);
+      data->syms = NULL;
+   }
+
+   free_edges(data->cedges);
+   free_edges(data->tedges);
+
+   data->fresh_t = data->conj_fresh_t;
+   data->fresh_s = data->conj_fresh_s;
+   data->fresh_c = data->conj_fresh_c;
+   data->maxvar = data->conj_maxvar;
+}
+
+
+void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaWeightTfParam_p data)
+{
+   Clause_p clause0 = clause_fresh_copy(clause, data); 
+
+   long tid = -1;
+   long cid = (data->conj_mode) ? data->conj_fresh_c : data->fresh_c;
+   for (Eqn_p lit = clause0->literals; lit; lit = lit->next)
+   {
+      bool pos = EqnIsPositive(lit);
+      if (lit->rterm->f_code == SIG_TRUE_CODE)
+      {
+         tid = names_update_term(lit->lterm, data, pos ? 1 : -1);
+      }
+      else
+      {
+         Term_p term = TermTopAlloc(data->proofstate->signature->eqn_code, 2);
+         term->args[0] = lit->lterm;
+         term->args[1] = lit->rterm;
+         Term_p term1 = TBInsert(data->tmp_bank, term, DEREF_ALWAYS);
+         tid = names_update_term(term1, data, pos ? 1 : -1);
+         TermTopFree(term); 
+      }
+      edge_clause(cid, tid, data);
+   }
+   if (tid == -1)
+   {
+      return;
+   }
+   if (data->conj_mode)
+   {
+      data->conj_fresh_c++;
+   }
+   else
+   {
+      data->fresh_c++;
+   }
+
+#ifdef DEBUG_ETF
+   fprintf(GlobalOut, "#TF# Clause c%ld: ", cid);
+   ClausePrint(GlobalOut, clause, true);
+   fprintf(GlobalOut, "\n");
+#endif
+
+   ClauseFree(clause0);
+}
+
 
 EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void)
 {
@@ -1234,11 +1236,11 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
       local = saved_local;
    }
    local->init_fun(local);
-   names_reset(local);
+   EnigmaTensorsReset(local);
 
    for (Clause_p handle=set->anchor->succ; handle!=set->anchor; handle=handle->succ)
    {
-      names_update_clause(handle, local);
+      EnigmaTensorsUpdateClause(handle, local);
    }
 
 #ifdef DEBUG_ETF
@@ -1265,7 +1267,7 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
    }
 
    tensor_free(local);
-   names_reset(local);
+   EnigmaTensorsReset(local);
 }
 
 void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local)
@@ -1281,12 +1283,12 @@ void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local)
    }
    local->init_fun(local);
 
-   names_reset(local);
+   EnigmaTensorsReset(local);
    local->conj_mode = true;
-   names_update_clause(clause, local);
+   EnigmaTensorsUpdateClause(clause, local);
    local->conj_mode = false;
    local->conj_maxvar = local->maxvar; // save maxvar to restore
-   names_reset(local);
+   EnigmaTensorsReset(local);
 #ifdef DEBUG_ETF
    fprintf(GlobalOut, "#TF# Context clause %ld added: ", local->context_cnt);
    ClausePrint(GlobalOut, clause, true);

@@ -16,7 +16,7 @@ include ../Makefile.vars
 
 # Project specific variables
 
-PROJECT = ex_commandline #term2dag 
+PROJECT = ex_commandline enigmatic-tensors  #term2dag 
 LIB     = $(PROJECT)
 all: $(LIB)
 
@@ -44,6 +44,13 @@ EX_COMMANDLINE = ex_commandline.o ../lib/INOUT.a ../lib/BASICS.a
 
 ex_commandline: $(EX_COMMANDLINE)
 	$(LD) -o ex_commandline $(EX_COMMANDLINE) $(LIBS)
+
+ENIGMATICTENSORS = enigmatic-tensors.o \
+				../lib/CONTROL.a ../lib/PCL2.a ../lib/CLAUSES.a ../lib/ORDERINGS.a \
+				../lib/TERMS.a ../lib/INOUT.a ../lib/BASICS.a ../lib/HEURISTICS.a
+
+enigmatic-tensors: $(ENIGMATICTENSORS)
+	$(LD) -o enigmatic-tensors $(ENIGMATICTENSORS) $(LIBS)
 
 include Makefile.dependencies
 

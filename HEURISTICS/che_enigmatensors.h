@@ -1,8 +1,8 @@
 /*-----------------------------------------------------------------------
 
-File  : che_enigmaweighttf.h
+File  : che_enigmatensors.h
 
-Author: could be anyone
+Author: AI4REASON
 
 Contents
  
@@ -20,14 +20,11 @@ Changes
 
 -----------------------------------------------------------------------*/
 
-#ifndef CHE_ENIGMAWEIGHTTF
+#ifndef CHE_ENIGMATENSORS
 
-#define CHE_ENIGMAWEIGHTTF
+#define CHE_ENIGMATENSORS
 
-#include <ccl_relevance.h>
-#include <che_refinedweight.h>
-
-#include <tensorflow/c/c_api.h>
+#include <cte_termbanks.h>
 
 /*---------------------------------------------------------------------*/
 /*                    Data type declarations                           */
@@ -37,21 +34,10 @@ Changes
 //#define DEBUG_ETF
 
 
-typedef struct enigmaweighttfparamcell
+typedef struct enigmatensorsparamcell
 {
-   OCB_p        ocb;
-   ProofState_p proofstate;
    TB_p         tmp_bank;
    long         tmp_bank_vars;
-
-   char* model_dirname;
-   long binary_weights;
-   long context_size;
-   double len_mult;
-
-   bool inited;
-
-   void   (*init_fun)(struct enigmaweighttfparamcell*);
 
    // clause edges
    NumTree_p terms;
@@ -77,65 +63,28 @@ typedef struct enigmaweighttfparamcell
    PStack_p conj_tedges;
    PStack_p conj_cedges;
 
-   // TensorFlow data
-   TF_Graph* graph;
-   TF_SessionOptions* options;
-   TF_Session* session;
-   TF_Buffer* run;
-   //TF_Buffer* meta;
-
-   TF_Output inputs[25];
-   TF_Tensor* input_values[25];
-
-   TF_Output outputs[1];
-   TF_Tensor* output_values[1];
-
    int n_is;
    int n_i1;
    int n_i2;
    int n_i3;
    
-   
-}EnigmaWeightTfParamCell, *EnigmaWeightTfParam_p;
+}EnigmaTensorsCell, *EnigmaTensors_p;
 
 /*---------------------------------------------------------------------*/
 /*                Exported Functions and Variables                     */
 /*---------------------------------------------------------------------*/
 
-#define EnigmaWeightTfParamCellAlloc() (EnigmaWeightTfParamCell*) \
-        SizeMalloc(sizeof(EnigmaWeightTfParamCell))
-#define EnigmaWeightTfParamCellFree(junk) \
-        SizeFree(junk, sizeof(EnigmaWeightTfParamCell))
+#define EnigmaTensorsCellAlloc() (EnigmaTensorsCell*) \
+        SizeMalloc(sizeof(EnigmaTensorsCell))
+#define EnigmaTensorsCellFree(junk) \
+        SizeFree(junk, sizeof(EnigmaTensorsCell))
 
-EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void);
-void              EnigmaWeightTfParamFree(EnigmaWeightTfParam_p junk);
+EnigmaTensors_p EnigmaTensorsAlloc(void);
+void              EnigmaTensorsFree(EnigmaTensors_p junk);
 
+//void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaTensors_p data);
 
-WFCB_p EnigmaWeightTfParse(
-   Scanner_p in, 
-   OCB_p ocb, 
-   ProofState_p state);
-
-WFCB_p EnigmaWeightTfInit(
-   ClausePrioFun prio_fun, 
-   OCB_p ocb,
-   ProofState_p proofstate,
-   char* model_dirname,
-   long binary_weights,
-   long context_size,
-   double len_mult);
-
-double EnigmaWeightTfCompute(void* data, Clause_p clause);
-
-void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local);
-
-void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local);
-
-void EnigmaWeightTfExit(void* data);
-
-void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaWeightTfParam_p data);
-
-void EnigmaTensorsReset(EnigmaWeightTfParam_p data);
+//void EnigmaTensorsReset(EnigmaTensors_p data);
 
 #endif
 
