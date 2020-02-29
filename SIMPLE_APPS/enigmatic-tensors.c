@@ -88,129 +88,122 @@ void print_help(FILE* out);
 /*                         Internal Functions                          */
 /*---------------------------------------------------------------------*/
 
-/*
-static NumTree_p get_conjecture_features(char* filename, TB_p bank, Enigmap_p enigmap)
+static void read_conjecture(char* fname, EnigmaTensors_p tensors, TB_p bank)
 {
-   int len = 0;
-   NumTree_p features = NULL;
-   NumTree_p varstat = NULL;
-   int varoffset = 0;
-   ClauseSet_p axioms = ClauseSetAlloc();
-
-   Scanner_p in = CreateScanner(StreamTypeFile, filename, true, NULL);
+   Scanner_p in = CreateScanner(StreamTypeFile, fname, true, NULL, NULL);
    ScannerSetFormat(in, TSTPFormat);
+   tensors->conj_mode = true;
    while (TestInpId(in, "cnf"))
    {
       Clause_p clause = ClauseParse(in, bank);
-      //if (len >= 2048) { Error("ENIGMA: Too many conjecture features!", OTHER_ERROR); } 
-      ClauseSetInsert(axioms, clause);
-   }
-   
-   if (enigmap->version & EFSine)
-   {
-      enigmap->symb_rank = SinESymbolRanking(axioms, bank);
-      enigmap->symb_count = bank->sig->f_count+1;
-   }
-
-   Clause_p anchor = axioms->anchor;
-   for (Clause_p clause=anchor->succ; clause!=anchor; clause=clause->succ)
-   {
       if (ClauseQueryTPTPType(clause) == CPTypeNegConjecture)
       {
-         //EnigmapMarkConjectureSymbols(enigmap, clause);
-         if (enigmap->version & EFConjecture)
-         {
-            len += FeaturesClauseExtend(&features, clause, enigmap);
-            FeaturesAddClauseStatic(&features, clause, enigmap, &len, &varstat, &varoffset);
-         }
+         EnigmaTensorsUpdateClause(clause, tensors);
       }
    }
-
-   if (enigmap->version & EFConjecture)
-   {
-      FeaturesAddVariables(&features, &varstat, enigmap, &len);
-   }
-
-   if (enigmap->version & EFProblem)
-   {
-      EnigmapFillProblemFeatures(enigmap, axioms);
-   }
-
    CheckInpTok(in, NoToken);
+   tensors->conj_mode = false;
+   tensors->conj_maxvar = tensors->maxvar; // save maxvar to restore
+   EnigmaTensorsReset(tensors);
    DestroyScanner(in);
-   ClauseSetFree(axioms);
-
-   return features;
 }
 
-static void dump_features_hashes(FILE* out, char* filename, TB_p bank, char* prefix, NumTree_p conj_features, 
-      Enigmap_p enigmap)
+static void read_clauses(char* fname, EnigmaTensors_p tensors, TB_p bank)
 {
-   PStack_p stack;
-   Scanner_p in = CreateScanner(StreamTypeFile, filename, true, NULL);
+   Scanner_p in = CreateScanner(StreamTypeFile, fname, true, NULL, NULL);
    ScannerSetFormat(in, TSTPFormat);
-   NumTree_p node;
-
    while (TestInpId(in, "cnf"))
    {
       Clause_p clause = ClauseParse(in, bank);
-      fprintf(out, prefix);
-   
-      int len = 0;
-      NumTree_p features = FeaturesClauseCollect(clause, enigmap, &len);
-      stack = NumTreeTraverseInit(features);
-      while ((node = NumTreeTraverseNext(stack)))
-      {
-         fprintf(out, " %ld:%ld", node->key, node->val1.i_val);
-      }
-      NumTreeTraverseExit(stack);
-      NumTreeFree(features);
-
-      stack = NumTreeTraverseInit(conj_features);
-      while ((node = NumTreeTraverseNext(stack)))
-      {
-         fprintf(out, " %ld:%ld", node->key+enigmap->feature_count, node->val1.i_val);
-      }
-      NumTreeTraverseExit(stack);
-
-      if (enigmap->version & EFProblem)
-      {
-         long start = enigmap->feature_count+1;
-         if (enigmap->version & EFConjecture) 
-         {
-            start += enigmap->feature_count;
-         }
-         for (int i=0; i<22; i++)
-         {
-            fprintf(out, " %ld:%.6f", start+i, enigmap->problem_features[i]);
-         }
-      }
-
-      ClauseFree(clause);
-      fprintf(out, "\n");
+      EnigmaTensorsUpdateClause(clause, tensors);
    }
    CheckInpTok(in, NoToken);
    DestroyScanner(in);
 }
-      
-static void dump_enigmap_stats(char* fname, Enigmap_p enigmap)
+
+void dump_escape(FILE* out, char* str)
+{
+   fprintf(out, "\"");
+   while (*str)
+   {
+      switch (*str) 
+      {
+         case '"':
+            fprintf(out, "\\\"");
+            break;
+         case '\\':
+            fprintf(out, "\\\\");
+            break;
+         default:
+            fprintf(out, "%c", *str);
+            break;
+      }
+      str++;
+   }
+   fprintf(out, "\"");
+}
+
+void dump_symbols(FILE* out, char* id, bool func, EnigmaTensors_p tensors)
 {
    PStack_p stack;
-   StrTree_p node;
-
-   FILE* out = fopen(fname, "w");
+   NumTree_p node;
+   Sig_p sig = tensors->tmp_bank->sig;
+   bool is_func;
+   char* name;
+   bool first = true;
    
-   stack = StrTreeTraverseInit(enigmap->stats);
-   while((node = StrTreeTraverseNext(stack)))
+   fprintf(out, "   \"%s\": {", id);
+   stack = NumTreeTraverseInit(tensors->conj_syms);
+   while ((node = NumTreeTraverseNext(stack)))
    {
-      // prints hash-code and usage counter for every used feature
-      fprintf(out, "usage(\"%s\",%ld,%ld).\n", node->key, node->val1.i_val, node->val2.i_val);
+      is_func = node->key && SigIsFunction(sig, node->key);
+      if (is_func != func) 
+      {
+         continue;
+      }
+      name = (node->key!=sig->eqn_code) ?  SigFindName(sig, node->key) : "=";
+      if (!first)
+      {
+         fprintf(out, " ,");
+      }
+      dump_escape(out, name);
+      fprintf(out, ": %ld", node->val1.i_val);
+      first = false;
    }
-   StrTreeTraverseExit(stack);
-
-   fclose(out);
+   NumTreeTraverseExit(stack);
+   
+   stack = NumTreeTraverseInit(tensors->syms);
+   while ((node = NumTreeTraverseNext(stack)))
+   {
+      is_func = node->key && SigIsFunction(sig, node->key);
+      if (is_func != func) 
+      {
+         continue;
+      }
+      name = (node->key!=sig->eqn_code) ?  SigFindName(sig, node->key) : "=";
+      if (!first)
+      {
+         fprintf(out, " ,");
+      }
+      dump_escape(out, name);
+      fprintf(out, ": %ld", node->val1.i_val);
+      first = false;
+   }
+   NumTreeTraverseExit(stack);
+   
+   fprintf(out, "},\n");
 }
-*/
+
+void dump_labels(FILE* out, char* id, int n_pos, int n_neg)
+{
+   int size = n_pos + n_neg;
+   fprintf(out, "   \"%s\": [", id);
+   for (int i=0; i<size; i++)
+   {
+      fprintf(out, "%d%s", (i<n_pos) ? 1 : 0, (i<size-1) ? ", " : "");
+   }
+   fprintf(out, "]\n");
+}
 
 int main(int argc, char* argv[])
 {
@@ -220,51 +213,39 @@ int main(int argc, char* argv[])
    OutputFormat = TSTPFormat;
    if (outname) { OpenGlobalOut(outname); }
    ProofState_p state = ProofStateAlloc(free_symb_prop);
-   //TB_p bank = state->terms;
-   EnigmaTensors_p tensors = EnigmaTensorsAlloc();
-   EnigmaTensorsFree(tensors);
    
-   //EnigmaTensorsUpdateClause(NULL, NULL); 
-   //EnigmaTensorsReset(NULL);
- 
-   /*
-   DStr_p dstr = NULL;
-   NumTree_p conj_features = NULL;
+   EnigmaTensors_p tensors = EnigmaTensorsAlloc();
+   tensors->tmp_bank = TBAlloc(state->signature);
 
-   Enigmap_p enigmap = NULL;
-   enigmap = EnigmapAlloc();
-   enigmap->feature_count = FeatureHashing;
-   enigmap->version = Enigma;
-   enigmap->sig = bank->sig;
-   enigmap->collect_stats = (enigmapname) ? true : false;
-   enigmap->stats = NULL;
-
-   if ((Enigma & (EFConjecture | EFProblem)) && (args->argc == 3))
+   int n_pos = 0;
+   if (args->argc == 3)
    {
-      conj_features = get_conjecture_features(args->argv[2], bank, enigmap);
+      read_conjecture(args->argv[2], tensors, state->terms);
    }
    if (args->argc == 1)
    {
-      dump_features_hashes(GlobalOut, args->argv[0], bank, "+?", conj_features, enigmap);
+      read_clauses(args->argv[0], tensors, state->terms);
+      n_pos = tensors->fresh_c - tensors->conj_fresh_c;
    }
    else
    {
-      dump_features_hashes(GlobalOut, args->argv[0], bank, "+1", conj_features, enigmap);
-      dump_features_hashes(GlobalOut, args->argv[1], bank, "+0", conj_features, enigmap);
+      read_clauses(args->argv[0], tensors, state->terms);
+      n_pos = tensors->fresh_c - tensors->conj_fresh_c;
+      read_clauses(args->argv[1], tensors, state->terms);
    }
+   int n_neg = tensors->fresh_c - tensors->conj_fresh_c - n_pos;
 
-   if (enigmapname) 
-   {
-      dump_enigmap_stats(enigmapname, enigmap);
-   }
+   EnigmaTensorsFill(tensors);
 
-   if (dstr) { DStrFree(dstr); }
-   if (enigmap) { EnigmapFree(enigmap); }
-   if (conj_features) { NumTreeFree(conj_features); }
-   */
+   fprintf(GlobalOut, "{\n");
+   EnigmaTensorsDump(GlobalOut, tensors);
+   dump_symbols(GlobalOut, "sig/func", true, tensors);
+   dump_symbols(GlobalOut, "sig/pred", false, tensors);
+   dump_labels(GlobalOut, "labels", n_pos, n_neg);
+   fprintf(GlobalOut, "}\n");
 
-   //TBFree(bank);
-   //SigFree(sig);
+   EnigmaTensorsFree(tensors);
+   
    ProofStateFree(state);
    CLStateFree(args);
    ExitIO();
@@ -334,9 +315,7 @@ void print_help(FILE* out)
 Usage: enigmatic-tensors [options] cnfs.tptp\n\
    or: enigmatic-tensors [options] train.pos train.neg [train.cnf]\n\
 \n\
-Make enigma features from TPTP cnf clauses.  Optionally prefixing with\n\
-sign (+ or -), and postfixing with conjecture features from train.cnf.\n\
-Output line format is 'sign|clause|conjecture'.\n\
+Make Enigma tensors from TPTP cnf clauses.\n\
 \n");
    PrintOptions(stdout, opts, NULL);
 }

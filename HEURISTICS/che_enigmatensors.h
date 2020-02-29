@@ -25,6 +25,7 @@ Changes
 #define CHE_ENIGMATENSORS
 
 #include <cte_termbanks.h>
+#include <ccl_clauses.h>
 
 /*---------------------------------------------------------------------*/
 /*                    Data type declarations                           */
@@ -68,6 +69,33 @@ typedef struct enigmatensorsparamcell
    int n_i2;
    int n_i3;
    
+   // raw tensors data:
+   int32_t ini_nodes[ETF_TENSOR_SIZE];
+   int32_t ini_symbols[ETF_TENSOR_SIZE];
+   int32_t ini_clauses[ETF_TENSOR_SIZE];
+   int32_t clause_inputs_data[ETF_TENSOR_SIZE];
+   int32_t clause_inputs_lens[ETF_TENSOR_SIZE];
+   int32_t node_c_inputs_data[ETF_TENSOR_SIZE];
+   int32_t node_c_inputs_lens[ETF_TENSOR_SIZE];
+   int32_t symbol_inputs_nodes[3*ETF_TENSOR_SIZE]; 
+   int32_t symbol_inputs_lens[ETF_TENSOR_SIZE]; 
+   int32_t node_inputs_1_symbols[ETF_TENSOR_SIZE];
+   int32_t node_inputs_1_nodes[2*ETF_TENSOR_SIZE];
+   int32_t node_inputs_1_lens[ETF_TENSOR_SIZE];
+   int32_t node_inputs_2_symbols[ETF_TENSOR_SIZE];
+   int32_t node_inputs_2_nodes[2*ETF_TENSOR_SIZE];
+   int32_t node_inputs_2_lens[ETF_TENSOR_SIZE];
+   int32_t node_inputs_3_symbols[ETF_TENSOR_SIZE];
+   int32_t node_inputs_3_nodes[2*ETF_TENSOR_SIZE];
+   int32_t node_inputs_3_lens[ETF_TENSOR_SIZE];
+   float symbol_inputs_sgn[ETF_TENSOR_SIZE]; 
+   float node_inputs_1_sgn[ETF_TENSOR_SIZE];
+   float node_inputs_2_sgn[ETF_TENSOR_SIZE];
+   float node_inputs_3_sgn[ETF_TENSOR_SIZE];
+   int32_t prob_segments_lens[ETF_TENSOR_SIZE];
+   int32_t prob_segments_data[ETF_TENSOR_SIZE];
+   int32_t labels[ETF_TENSOR_SIZE];
+
 }EnigmaTensorsCell, *EnigmaTensors_p;
 
 /*---------------------------------------------------------------------*/
@@ -82,9 +110,13 @@ typedef struct enigmatensorsparamcell
 EnigmaTensors_p EnigmaTensorsAlloc(void);
 void              EnigmaTensorsFree(EnigmaTensors_p junk);
 
-//void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaTensors_p data);
+void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaTensors_p data);
 
-//void EnigmaTensorsReset(EnigmaTensors_p data);
+void EnigmaTensorsReset(EnigmaTensors_p data);
+
+void EnigmaTensorsFill(EnigmaTensors_p data);
+
+void EnigmaTensorsDump(FILE* out, EnigmaTensors_p tensors);
 
 #endif
 

@@ -26,6 +26,7 @@ Changes
 
 #include <ccl_relevance.h>
 #include <che_refinedweight.h>
+#include <che_enigmatensors.h>
 
 #include <tensorflow/c/c_api.h>
 
@@ -33,16 +34,12 @@ Changes
 /*                    Data type declarations                           */
 /*---------------------------------------------------------------------*/
 
-#define ETF_TENSOR_SIZE (10*1024*1024)
-//#define DEBUG_ETF
-
-
 typedef struct enigmaweighttfparamcell
 {
    OCB_p        ocb;
    ProofState_p proofstate;
-   TB_p         tmp_bank;
-   long         tmp_bank_vars;
+   //TB_p         tmp_bank;
+   //long         tmp_bank_vars;
 
    char* model_dirname;
    long binary_weights;
@@ -52,6 +49,8 @@ typedef struct enigmaweighttfparamcell
    bool inited;
 
    void   (*init_fun)(struct enigmaweighttfparamcell*);
+
+   EnigmaTensors_p tensors;
 
    // clause edges
    NumTree_p terms;
@@ -94,8 +93,7 @@ typedef struct enigmaweighttfparamcell
    int n_i1;
    int n_i2;
    int n_i3;
-   
-   
+
 }EnigmaWeightTfParamCell, *EnigmaWeightTfParam_p;
 
 /*---------------------------------------------------------------------*/
@@ -133,9 +131,9 @@ void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local);
 
 void EnigmaWeightTfExit(void* data);
 
-void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaWeightTfParam_p data);
+//void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaWeightTfParam_p data);
 
-void EnigmaTensorsReset(EnigmaWeightTfParam_p data);
+//void EnigmaTensorsReset(EnigmaWeightTfParam_p data);
 
 #endif
 
