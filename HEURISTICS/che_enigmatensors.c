@@ -110,19 +110,45 @@ static void fresh_clause(Clause_p clause, EnigmaTensors_p data)
    }
 }
 
+static void free_term(Term_p term)
+{
+   if (!TermIsVar(term))
+   {
+      for(int i=0; i<term->arity; i++)
+      {
+         free_term(term->args[i]);
+      }
+      TermTopFree(term);
+   }
+}
+
+static void free_clause(Clause_p clause)
+{
+   for (Eqn_p lit = clause->literals; lit; )
+   {
+      free_term(lit->lterm);
+      free_term(lit->rterm);
+      Eqn_p lit2 = lit->next;
+      EqnCellFree(lit);
+      lit = lit2;
+   }
+   ClauseCellFree(clause);
+}
+
 static Clause_p clause_fresh_copy(Clause_p clause, EnigmaTensors_p data)
 {
    Clause_p clause0 = ClauseFlatCopy(clause);
    fresh_clause(clause0, data);
    Clause_p clause1 = ClauseCopy(clause0, data->tmp_bank);
-   ClauseFree(clause0);
+   //ClauseFree(clause0);
+   free_clause(clause0);
    return clause1;
 }
 
 static bool edge_term_check(long i, long j, long k, long l, long b,
    PStack_p edges)
 {
-   for (int idx=0; i<edges->current; i++)
+   for (int idx=0; idx<edges->current; idx++)
    { 
       PDArray_p edge = PStackElementP(edges, idx);
       if (
@@ -586,6 +612,27 @@ void EnigmaTensorsFree(EnigmaTensors_p junk)
    PStackFree(junk->cedges);
    PStackFree(junk->conj_tedges);
    PStackFree(junk->conj_cedges);
+
+   if (junk->terms)
+   {
+      NumTreeFree(junk->terms);
+      junk->terms = NULL;
+   }
+   if (junk->syms)
+   {
+      NumTreeFree(junk->syms);
+      junk->syms = NULL;
+   }
+   if (junk->conj_terms)
+   {
+      NumTreeFree(junk->conj_terms);
+      junk->conj_terms = NULL;
+   }
+   if (junk->conj_syms)
+   {
+      NumTreeFree(junk->conj_syms);
+      junk->conj_syms = NULL;
+   }
 
    if (junk->tmp_bank)
    {

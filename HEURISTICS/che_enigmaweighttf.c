@@ -34,7 +34,6 @@ Changes
 /*---------------------------------------------------------------------*/
 
 // FIXME: This will not work with different Tensorflow model!
-// (and neither will tensor_fill_input)!
 static EnigmaWeightTfParam_p saved_local = NULL;
 
 

@@ -16,8 +16,8 @@ include ../Makefile.vars
 
 # Project specific variables
 
-PROJECT = ex_commandline enigmatic-tensors  #term2dag 
-LIB     = $(PROJECT)
+PROJECT = ex_commandline enigmatic-tensors #term2dag 
+LIB     = $(PROJECT) enigmatic_tensors_python  
 all: $(LIB)
 
 depend: *.c
@@ -28,6 +28,7 @@ depend: *.c
 clean:
 	@touch does_exist.o does_exist.dSYM does_exist.a $(PROJECT)
 	@rm -r *.o $(PROJECT) *.dSYM *.a
+	@rm -fr enigmatic_tensors_python/build
 
 # Services (provided by the master Makefile)
 
@@ -51,6 +52,9 @@ ENIGMATICTENSORS = enigmatic-tensors.o \
 
 enigmatic-tensors: $(ENIGMATICTENSORS)
 	$(LD) -o enigmatic-tensors $(ENIGMATICTENSORS) $(LIBS)
+
+enigmatic_tensors_python: $(ENIGMATICTENSORS) enigmatic_tensors_python/enigmatic_tensors.c
+	(cd enigmatic_tensors_python; python setup.py build)
 
 include Makefile.dependencies
 

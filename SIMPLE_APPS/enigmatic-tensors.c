@@ -74,7 +74,7 @@ OptCell opts[] =
 char *outname = NULL;
 char *enigmapname= NULL;
 FunctionProperties free_symb_prop = FPIgnoreProps;
-ProblemType problemType  = PROBLEM_NOT_INIT;
+ProblemType problemType  = PROBLEM_FO;
 bool app_encode = false;
 
 /*---------------------------------------------------------------------*/
@@ -100,6 +100,7 @@ static void read_conjecture(char* fname, EnigmaTensors_p tensors, TB_p bank)
       {
          EnigmaTensorsUpdateClause(clause, tensors);
       }
+      ClauseFree(clause);
    }
    CheckInpTok(in, NoToken);
    tensors->conj_mode = false;
@@ -116,6 +117,7 @@ static void read_clauses(char* fname, EnigmaTensors_p tensors, TB_p bank)
    {
       Clause_p clause = ClauseParse(in, bank);
       EnigmaTensorsUpdateClause(clause, tensors);
+      ClauseFree(clause);
    }
    CheckInpTok(in, NoToken);
    DestroyScanner(in);
