@@ -199,7 +199,28 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    data->conj_maxvar = data->maxvar; // save maxvar to restore
    EnigmaTensorsReset(data->tensors);
 
-   // TODO SERVER: open socket here
+   char* etf_ip = "127.0.0.1";
+   uint16_t etf_port = 8888;
+
+   data->etf_socket = socket(AF_INET , SOCK_STREAM , 0);
+	if (data->etf_socket == -1)
+	{
+      perror(NULL);
+		Error("ENIGMA: Can not create socket to connect to TF server!", OTHER_ERROR);
+	}
+
+	data->etf_server.sin_family = AF_INET;
+   data->etf_server.sin_addr.s_addr = inet_addr(etf_ip);
+	data->etf_server.sin_port = htons(etf_port);
+
+   if (connect(data->etf_socket, (struct sockaddr*)&(data->etf_server), sizeof(data->etf_server)) < 0)
+   {
+      perror(NULL);
+      Error("ENIGMA: Error connecting to the TF server '%s:%d'.", OTHER_ERROR, etf_ip, etf_port);
+   }
+
+   fprintf(GlobalOut, "ENIGMA: Connected to the TF server '%s:%d'.\n", etf_ip, etf_port);
+
    data->inited = true;
 }
 

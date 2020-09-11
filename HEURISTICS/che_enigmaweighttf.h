@@ -24,6 +24,8 @@ Changes
 
 #define CHE_ENIGMAWEIGHTTF
 
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <ccl_relevance.h>
 #include <che_refinedweight.h>
 #include <che_enigmatensors.h>
@@ -80,6 +82,8 @@ typedef struct enigmaweighttfparamcell
    int n_i3;
 
    // socket data
+   int etf_socket;
+   struct sockaddr_in etf_server;
 
 }EnigmaWeightTfParamCell, *EnigmaWeightTfParam_p;
 
