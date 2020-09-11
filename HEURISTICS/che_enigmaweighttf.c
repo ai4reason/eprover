@@ -23,8 +23,6 @@ Changes
 #include "che_enigmaweighttf.h"
 #include "cco_proofproc.h"
 
-#include <tensorflow/c/c_api_experimental.h>
-
 /*---------------------------------------------------------------------*/
 /*                        Global Variables                             */
 /*---------------------------------------------------------------------*/
@@ -136,7 +134,7 @@ static void debug_edges(EnigmaWeightTfParam_p data)
    }
 
 }
-
+/*
 static void debug_vector_float(char* name, float* vals, int len, char* tfid, int idx) 
 {
    fprintf(GlobalOut, "#TF# %s: index=%d op=%s\n", name, idx, tfid);
@@ -172,179 +170,8 @@ static void debug_matrix(char* name, int32_t* vals, int dimx, int dimy, char* tf
       fprintf(GlobalOut, "%s", (x<dimx-1) ? ", " : " ]\n");
    }
 }
-#endif
-
-void idle_deallocator(void* data, size_t len, void* arg)
-{
-}
-
-void set_input_vector_int32(int idx, int size, char* id, int32_t* values, 
-   char* name, EnigmaWeightTfParam_p data)
-{
-   data->inputs[idx].oper = TF_GraphOperationByName(data->graph, name);
-   data->inputs[idx].index = 0;
-
-   int64_t dims[1];
-   dims[0] = size;
-   data->input_values[idx] = TF_NewTensor(
-      TF_INT32, dims, 1, values, size*sizeof(int32_t), idle_deallocator, NULL);
-   
-#ifdef DEBUG_ETF 
-   debug_vector_int32(id, values, size, name, idx);
-#endif
-}
-
-void set_input_vector_float(int idx, int size, char* id, float* values, 
-   char* name, EnigmaWeightTfParam_p data)
-{
-   data->inputs[idx].oper = TF_GraphOperationByName(data->graph, name);
-   data->inputs[idx].index = 0;
-
-   int64_t dims[1];
-   dims[0] = size;
-   data->input_values[idx] = TF_NewTensor(
-      TF_FLOAT, dims, 1, values, size*sizeof(float), idle_deallocator, NULL);
-   
-#ifdef DEBUG_ETF
-   debug_vector_float(id, values, size, name, idx);
-#endif
-}
-
-void set_input_matrix(int idx, int dimx, int dimy, char* id, int32_t* values, 
-   char* name, EnigmaWeightTfParam_p data)
-{
-   data->inputs[idx].oper = TF_GraphOperationByName(data->graph, name);
-   data->inputs[idx].index = 0;
-
-   int64_t dims[2];
-   dims[0] = dimx;
-   dims[1] = dimy;
-   int64_t size = dimx * dimy;
-   data->input_values[idx] = TF_NewTensor(
-      TF_INT32, dims, 2, values, size*sizeof(int32_t), idle_deallocator, NULL);
-  
-#ifdef DEBUG_ETF 
-   debug_matrix(id, values, dimx, dimy, name, idx);
-#endif
-}
-
-static void tensor_fill_input(EnigmaWeightTfParam_p data)
-{
-   EnigmaTensorsFill(data->tensors);
-
-   int n_ce = data->tensors->cedges->current + data->tensors->conj_cedges->current;
-   //int n_te = data->tensors->tedges->current + data->tensors->conj_tedges->current;
-   int n_s = data->tensors->fresh_s;
-   int n_c = data->tensors->fresh_c;
-   int n_t = data->tensors->fresh_t;
-   int n_q = n_c - (data->tensors->conj_fresh_c - data->tensors->context_cnt); // query clauses (evaluated and context clauses)
-   int n_is = data->tensors->n_is;
-   int n_i1 = data->tensors->n_i1;
-   int n_i2 = data->tensors->n_i2;
-   int n_i3 = data->tensors->n_i3;
-
-   // set vectors to data
-   set_input_vector_int32(0, n_t, "ini_nodes", data->tensors->ini_nodes, "GraphPlaceholder/ini_nodes", data);
-   set_input_vector_int32(1, n_s, "ini_symbols", data->tensors->ini_symbols, "GraphPlaceholder/ini_symbols", data);
-   set_input_vector_int32(2, n_c, "ini_clauses", data->tensors->ini_clauses, "GraphPlaceholder/ini_clauses", data);
-   set_input_vector_int32(3, n_t, "node_inputs_1_lens", data->tensors->node_inputs_1_lens, "GraphPlaceholder/GraphHyperEdgesA/segment_lens", data);
-   set_input_vector_int32(4, n_i1, "node_inputs_1_symbols", data->tensors->node_inputs_1_symbols, "GraphPlaceholder/GraphHyperEdgesA/symbols", data);
-   set_input_vector_float(5, n_i1, "node_inputs_1_sgn", data->tensors->node_inputs_1_sgn, "GraphPlaceholder/GraphHyperEdgesA/sgn", data);
-   set_input_vector_int32(6, n_t, "node_inputs_2_lens", data->tensors->node_inputs_2_lens, "GraphPlaceholder/GraphHyperEdgesA_1/segment_lens", data);
-   set_input_vector_int32(7, n_i2, "node_inputs_2_symbols", data->tensors->node_inputs_2_symbols, "GraphPlaceholder/GraphHyperEdgesA_1/symbols", data);
-   set_input_vector_float(8, n_i2, "node_inputs_2_sgn", data->tensors->node_inputs_2_sgn, "GraphPlaceholder/GraphHyperEdgesA_1/sgn", data);
-   set_input_vector_int32(9, n_t, "node_inputs_3_lens", data->tensors->node_inputs_3_lens, "GraphPlaceholder/GraphHyperEdgesA_2/segment_lens", data);
-   set_input_vector_int32(10, n_i3, "node_inputs_3_symbols", data->tensors->node_inputs_3_symbols, "GraphPlaceholder/GraphHyperEdgesA_2/symbols", data);
-   set_input_vector_float(11, n_i3, "node_inputs_3_sgn", data->tensors->node_inputs_3_sgn, "GraphPlaceholder/GraphHyperEdgesA_2/sgn", data);
-   set_input_vector_int32(12, n_s, "symbol_inputs_lens", data->tensors->symbol_inputs_lens, "GraphPlaceholder/GraphHyperEdgesB/segment_lens", data);
-   set_input_vector_float(13, n_is, "symbol_inputs_sgn", data->tensors->symbol_inputs_sgn, "GraphPlaceholder/GraphHyperEdgesB/sgn", data);
-   set_input_vector_int32(14, n_t, "node_c_inputs_lens", data->tensors->node_c_inputs_lens, "GraphPlaceholder/GraphEdges/segment_lens", data);
-   set_input_vector_int32(15, n_ce, "node_c_inputs_data", data->tensors->node_c_inputs_data, "GraphPlaceholder/GraphEdges/data", data);
-   set_input_vector_int32(16, n_c, "clause_inputs_lens", data->tensors->clause_inputs_lens, "GraphPlaceholder/GraphEdges_1/segment_lens", data);
-   set_input_vector_int32(17, n_ce, "clause_inputs_data", data->tensors->clause_inputs_data, "GraphPlaceholder/GraphEdges_1/data", data);
-   set_input_vector_int32(18, 1, "prob_segments_lens", data->tensors->prob_segments_lens, "segment_lens", data);
-   set_input_vector_int32(19, 1+n_q, "prob_segments_data", data->tensors->prob_segments_data, "segment_data", data);
-   set_input_vector_int32(20, n_q, "labels", data->tensors->labels, "Placeholder", data);
-   set_input_matrix(21, n_i1, 2, "node_inputs_1_nodes", data->tensors->node_inputs_1_nodes, "GraphPlaceholder/GraphHyperEdgesA/nodes", data);
-   set_input_matrix(22, n_i2, 2, "node_inputs_2_nodes", data->tensors->node_inputs_2_nodes, "GraphPlaceholder/GraphHyperEdgesA_1/nodes", data);
-   set_input_matrix(23, n_i3, 2, "node_inputs_3_nodes", data->tensors->node_inputs_3_nodes, "GraphPlaceholder/GraphHyperEdgesA_2/nodes", data);
-   set_input_matrix(24, n_is, 3, "symbol_inputs_nodes", data->tensors->symbol_inputs_nodes, "GraphPlaceholder/GraphHyperEdgesB/nodes", data);
-}
-
-static void tensor_fill_output(EnigmaWeightTfParam_p data)
-{
-   static float logits[ETF_TENSOR_SIZE];
-
-   data->outputs[0].oper = TF_GraphOperationByName(data->graph, "Squeeze");
-   data->outputs[0].index = 0;
-   
-   int n_q = data->fresh_c - (data->conj_fresh_c - data->context_cnt);
-   int64_t out_dims[1];
-   out_dims[0] = n_q;
-   data->output_values[0] = TF_NewTensor(TF_FLOAT, out_dims, 1, logits, 
-      n_q*sizeof(float), idle_deallocator, NULL);
-}
-
-static void tensor_eval(EnigmaWeightTfParam_p data)
-{
-   TF_Status* status = TF_NewStatus();
-
-   TF_SessionRun(
-       data->session,
-       // RunOptions
-       NULL, //data->run,
-       // Input tensors
-       data->inputs, 
-       data->input_values, 
-       25, 
-       // Output tensors
-       data->outputs, 
-       data->output_values, 
-       1, 
-       // Target operations
-       NULL, 
-       0, 
-       // RunMetadata
-       NULL,
-       // Output status
-       status
-   );
-   
-   if (TF_GetCode(status) != TF_OK)
-   {
-      Error("Enigma: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
-   }
-
-   TF_DeleteStatus(status);
-}
-
-static void tensor_free(EnigmaWeightTfParam_p data)
-{
-   for (int i=0; i<25; i++)
-   {
-      TF_DeleteTensor(data->input_values[i]);
-      data->input_values[i] = NULL;
-      data->inputs[i].oper = NULL;
-   }
-
-   TF_DeleteTensor(data->output_values[0]);
-   data->outputs[0].oper = NULL;
-}
-  
-/*
-static double tensor_transform(EnigmaWeightTfParam_p data)
-{
-   int n_q = data->fresh_c - data->conj_fresh_c;
-   float* logits = TF_TensorData(data->output_values[0]);
-#ifdef DEBUG_ETF
-   debug_vector_float("logits", logits, n_q, "Squeeze", 0);
-#endif
-
-   double val = logits[n_q-1];
-   //return -val;
-   return (val > 0.0) ? 1 : 10;
-}
 */
+#endif
 
 static void extweight_init(EnigmaWeightTfParam_p data)
 {
@@ -356,7 +183,7 @@ static void extweight_init(EnigmaWeightTfParam_p data)
       return;
    }
 
-   fprintf(GlobalOut, "# ENIGMA: TensorFlow C library version %s\n", TF_Version());
+   //fprintf(GlobalOut, "# ENIGMA: TensorFlow C library version %s\n", TF_Version());
    // process conjectures
    data->tensors->tmp_bank = TBAlloc(data->proofstate->signature);
    data->conj_mode = true;
@@ -372,39 +199,7 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    data->conj_maxvar = data->maxvar; // save maxvar to restore
    EnigmaTensorsReset(data->tensors);
 
-   // init tensorflow
-   data->graph = TF_NewGraph();
-   data->options = TF_NewSessionOptions();
-   data->run = TF_NewBuffer();
-   TF_Status* status = TF_NewStatus();
-
-   const char* tags[1] = {"serve"};
-
-   TF_Buffer* config = TF_CreateConfig(0, 0, 1);
-   TF_SetConfig(data->options, config->data, config->length, status);
-   // TODO: free config
-
-   data->session = TF_LoadSessionFromSavedModel(
-      data->options, 
-      NULL, // NULL, // const TF_Buffer* run_options,
-      data->model_dirname, 
-      tags, 
-      1,
-      data->graph, 
-      NULL, // NULL, //TF_Buffer* meta_graph_def, 
-      status
-   );
-
-   if (TF_GetCode(status) != TF_OK)
-   {
-      Error("Enigma: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
-   }
-   TF_DeleteStatus(status);
-
-   fprintf(GlobalOut, "# ENIGMA: TensorFlow: model '%s' loaded (query=%ld; context=%ld; weigths=%s; len_mult=%f).\n", 
-      data->model_dirname, DelayedEvalSize, data->context_size,
-      (data->binary_weights ? "binary" : "real"), data->len_mult);
-
+   // TODO SERVER: open socket here
    data->inited = true;
 }
 
@@ -458,23 +253,6 @@ void EnigmaWeightTfParamFree(EnigmaWeightTfParam_p junk)
    EnigmaTensorsFree(junk->tensors);
    junk->tensors = NULL;
    
-   // terminate
-   TF_Status* status = TF_NewStatus();
-   TF_CloseSession(junk->session, status);
-   if (TF_GetCode(status) != TF_OK)
-   {
-      Error("ENIGMA: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
-   }
-   TF_DeleteSession(junk->session, status);
-   if (TF_GetCode(status) != TF_OK)
-   {
-      Error("ENIGMA: Tensorflow: %s\n", OTHER_ERROR, TF_Message(status));
-   }
-   TF_DeleteSessionOptions(junk->options);
-   TF_DeleteGraph(junk->graph);
-   TF_DeleteStatus(status);
-   TF_DeleteBuffer(junk->run);
-
    EnigmaWeightTfParamCellFree(junk);
 }
  
@@ -591,25 +369,15 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
    debug_terms(local);
    debug_edges(local);
 #endif
-   tensor_fill_input(local);
-   tensor_fill_output(local);
-   tensor_eval(local);
-   
-   float* logits = TF_TensorData(local->output_values[0]);
-#ifdef DEBUG_ETF
-   int n_q = local->fresh_c - (local->conj_fresh_c - local->context_cnt);
-   assert(n_q == set->members + local->context_cnt);
-   debug_vector_float("logits", logits, n_q, "Squeeze", 0);
-   fprintf(GlobalOut, "#TF#QUERY# query = %d; eval = %ld; context = %ld\n", n_q, set->members, local->context_cnt);
-#endif
 
-   int idx = local->context_cnt;
+   // TODO SERVER: call server evaluation here
+   
+   //int idx = local->context_cnt;
    for (Clause_p handle=set->anchor->succ; handle!=set->anchor; handle=handle->succ)
    {
-      handle->tf_weight = logits[idx++];
+      handle->tf_weight = 1.23; // logits[idx++];
    }
 
-   tensor_free(local);
    EnigmaTensorsReset(local->tensors);
 }
 

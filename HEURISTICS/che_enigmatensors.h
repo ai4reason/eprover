@@ -32,7 +32,7 @@ Changes
 /*---------------------------------------------------------------------*/
 
 #define ETF_TENSOR_SIZE (10*1024*1024)
-//#define DEBUG_ETF
+#define DEBUG_ETF
 
 
 typedef struct enigmatensorsparamcell

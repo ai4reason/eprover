@@ -28,8 +28,6 @@ Changes
 #include <che_refinedweight.h>
 #include <che_enigmatensors.h>
 
-#include <tensorflow/c/c_api.h>
-
 /*---------------------------------------------------------------------*/
 /*                    Data type declarations                           */
 /*---------------------------------------------------------------------*/
@@ -76,23 +74,12 @@ typedef struct enigmaweighttfparamcell
    PStack_p conj_tedges;
    PStack_p conj_cedges;
 
-   // TensorFlow data
-   TF_Graph* graph;
-   TF_SessionOptions* options;
-   TF_Session* session;
-   TF_Buffer* run;
-   //TF_Buffer* meta;
-
-   TF_Output inputs[25];
-   TF_Tensor* input_values[25];
-
-   TF_Output outputs[1];
-   TF_Tensor* output_values[1];
-
    int n_is;
    int n_i1;
    int n_i2;
    int n_i3;
+
+   // socket data
 
 }EnigmaWeightTfParamCell, *EnigmaWeightTfParam_p;
 
