@@ -24,6 +24,8 @@ Changes
 
 #define CHE_ENIGMATENSORS
 
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <cte_termbanks.h>
 #include <ccl_clauses.h>
 
@@ -33,7 +35,15 @@ Changes
 
 #define ETF_TENSOR_SIZE (10*1024*1024)
 #define DEBUG_ETF
+#define SOCKET_BUF_SIZE 1024
 
+typedef struct enigmasocketcell
+{
+   int fd;
+   int cur;
+   struct sockaddr_in addr;
+   char buf[SOCKET_BUF_SIZE+128];
+} EnigmaSocketCell, *EnigmaSocket_p;
 
 typedef struct enigmatensorsparamcell
 {
@@ -107,8 +117,16 @@ typedef struct enigmatensorsparamcell
 #define EnigmaTensorsCellFree(junk) \
         SizeFree(junk, sizeof(EnigmaTensorsCell))
 
+#define EnigmaSocketCellAlloc() (EnigmaSocketCell*) \
+        SizeMalloc(sizeof(EnigmaSocketCell))
+#define EnigmaSocketCellFree(junk) \
+        SizeFree(junk, sizeof(EnigmaSocketCell))
+
 EnigmaTensors_p EnigmaTensorsAlloc(void);
 void              EnigmaTensorsFree(EnigmaTensors_p junk);
+
+EnigmaSocket_p EnigmaSocketAlloc(void);
+void              EnigmaSocketFree(EnigmaSocket_p junk);
 
 void EnigmaTensorsUpdateClause(Clause_p clause, EnigmaTensors_p data);
 
@@ -117,6 +135,8 @@ void EnigmaTensorsReset(EnigmaTensors_p data);
 void EnigmaTensorsFill(EnigmaTensors_p data);
 
 void EnigmaTensorsDump(FILE* out, EnigmaTensors_p tensors);
+
+void EnigmaSocketSend(EnigmaSocket_p sock, EnigmaTensors_p tensors);
 
 #endif
 

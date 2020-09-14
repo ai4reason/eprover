@@ -82,8 +82,7 @@ typedef struct enigmaweighttfparamcell
    int n_i3;
 
    // socket data
-   int etf_socket;
-   struct sockaddr_in etf_server;
+   EnigmaSocket_p sock;
 
 }EnigmaWeightTfParamCell, *EnigmaWeightTfParam_p;
 

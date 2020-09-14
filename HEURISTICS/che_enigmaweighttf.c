@@ -202,18 +202,18 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    char* etf_ip = "127.0.0.1";
    uint16_t etf_port = 8888;
 
-   data->etf_socket = socket(AF_INET , SOCK_STREAM , 0);
-	if (data->etf_socket == -1)
+   data->sock->fd = socket(AF_INET , SOCK_STREAM , 0);
+	if (data->sock->fd == -1)
 	{
       perror(NULL);
 		Error("ENIGMA: Can not create socket to connect to TF server!", OTHER_ERROR);
 	}
 
-	data->etf_server.sin_family = AF_INET;
-   data->etf_server.sin_addr.s_addr = inet_addr(etf_ip);
-	data->etf_server.sin_port = htons(etf_port);
+	data->sock->addr.sin_family = AF_INET;
+   data->sock->addr.sin_addr.s_addr = inet_addr(etf_ip);
+	data->sock->addr.sin_port = htons(etf_port);
 
-   if (connect(data->etf_socket, (struct sockaddr*)&(data->etf_server), sizeof(data->etf_server)) < 0)
+   if (connect(data->sock->fd, (struct sockaddr*)&(data->sock->addr), sizeof(data->sock->addr)) < 0)
    {
       perror(NULL);
       Error("ENIGMA: Error connecting to the TF server '%s:%d'.", OTHER_ERROR, etf_ip, etf_port);
@@ -259,6 +259,8 @@ EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void)
    res->maxvar = 0;
    res->tensors = EnigmaTensorsAlloc();
 
+   res->sock = EnigmaSocketAlloc();
+
    return res;
 }
 
@@ -271,6 +273,7 @@ void EnigmaWeightTfParamFree(EnigmaWeightTfParam_p junk)
       return;
    }
 
+   EnigmaSocketFree(junk->sock);
    EnigmaTensorsFree(junk->tensors);
    junk->tensors = NULL;
    
@@ -392,11 +395,22 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
 #endif
 
    // TODO SERVER: call server evaluation here
-   
+   EnigmaTensorsFill(local->tensors);
+   EnigmaSocketSend(local->sock, local->tensors);
+  
+
+   uint32_t size;
+   int n_q = local->tensors->fresh_c - local->tensors->conj_fresh_c + local->tensors->context_cnt;
+   recv(local->sock->fd, &size, 4, 0);
+   fprintf(GlobalOut, "Size: %d %d %ld\n", size, n_q, set->members);
+
    //int idx = local->context_cnt;
+   float val;
    for (Clause_p handle=set->anchor->succ; handle!=set->anchor; handle=handle->succ)
    {
-      handle->tf_weight = 1.23; // logits[idx++];
+      recv(local->sock->fd, &val, 4, 0);
+      fprintf(GlobalOut, "%f\n", val);
+      handle->tf_weight = val; // logits[idx++];
    }
 
    EnigmaTensorsReset(local->tensors);

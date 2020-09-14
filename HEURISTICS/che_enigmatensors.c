@@ -20,6 +20,7 @@ Changes
 
 -----------------------------------------------------------------------*/
 
+#include <sys/socket.h>
 #include "che_enigmatensors.h"
 
 /*---------------------------------------------------------------------*/
@@ -572,6 +573,18 @@ static void tensor_fill_query(
 /*                         Exported Functions                          */
 /*---------------------------------------------------------------------*/
 
+EnigmaSocket_p EnigmaSocketAlloc(void)
+{
+   EnigmaSocket_p sock = EnigmaSocketCellAlloc();
+   sock->cur = 0;
+   sock->fd = 0;
+   return sock;
+}
+
+void EnigmaSocketFree(EnigmaSocket_p junk)
+{
+   EnigmaSocketCellFree(junk);
+}
 
 EnigmaTensors_p EnigmaTensorsAlloc(void)
 {
@@ -760,6 +773,68 @@ void EnigmaTensorsFill(EnigmaTensors_p data)
       data->prob_segments_data, data);
 }
 
+void socket_flush(EnigmaSocket_p sock)
+{
+   int ret =  send(sock->fd, sock->buf, sock->cur, 0);
+   if (ret < 0)
+   {
+      Error("Sending data to Tensorflow server via a socket failed (%d).", OTHER_ERROR, ret);
+   }
+   sock->cur = 0;
+}
+
+void socket_finish(EnigmaSocket_p sock)
+{
+   sock->buf[sock->cur] = '\0';
+   sock->cur++;
+   socket_flush(sock);
+}
+
+void socket_str(EnigmaSocket_p sock, char* str)
+{
+   // NOTE: make sure the string is not longer than the buffer size!
+   int len = strlen(str);
+   if (sock->cur + len >= SOCKET_BUF_SIZE)
+   {
+      socket_flush(sock);
+   }
+   strncpy(&sock->buf[sock->cur], str, len+1);
+   sock->cur += len;
+}
+
+void socket_vector_int32(EnigmaSocket_p sock, int size, char* id, int32_t* values)
+{
+   char str[128];
+   socket_str(sock, "\"");
+   socket_str(sock, id);
+   socket_str(sock, "\":[");
+   for (int i=0; i<size; i++)
+   {
+      sprintf(str, "%d%s", values[i], (i<size-1) ? "," : "");
+      socket_str(sock, str);
+   }
+   socket_str(sock, "]");
+}
+
+void socket_vector_float(EnigmaSocket_p sock, int size, char* id, float* values)
+{
+   char str[128];
+   socket_str(sock, "\"");
+   socket_str(sock, id);
+   socket_str(sock, "\":[");
+   for (int i=0; i<size; i++)
+   {
+      sprintf(str, "%.01f%s", values[i], (i<size-1) ? "," : "");
+      socket_str(sock, str);
+   }
+   socket_str(sock, "]");
+}
+
+void socket_matrix(EnigmaSocket_p sock, int dimx, int dimy, char* id, int32_t* values)
+{
+   socket_vector_int32(sock, dimx*dimy, id, values);
+}
+
 void dump_vector_int32(FILE* out, int size, char* id, int32_t* values)
 {
    fprintf(out, "   \"%s\": [", id);
@@ -830,6 +905,73 @@ void EnigmaTensorsDump(FILE* out, EnigmaTensors_p tensors)
    dump_matrix(out, n_i3, 2, "node_inputs_3/nodes", tensors->node_inputs_3_nodes);
    dump_matrix(out, n_is, 3, "symbol_inputs/nodes", tensors->symbol_inputs_nodes);
 }
+
+void EnigmaSocketSend(EnigmaSocket_p sock, EnigmaTensors_p tensors)
+{
+   int n_ce = tensors->cedges->current + tensors->conj_cedges->current;
+   //int n_te = tensors->tedges->current + tensors->conj_tedges->current;
+   int n_s = tensors->fresh_s;
+   int n_c = tensors->fresh_c;
+   int n_t = tensors->fresh_t;
+   int n_q = n_c - (tensors->conj_fresh_c - tensors->context_cnt); // query clauses (evaluated and context clauses)
+   int n_is = tensors->n_is;
+   int n_i1 = tensors->n_i1;
+   int n_i2 = tensors->n_i2;
+   int n_i3 = tensors->n_i3;
+
+   socket_str(sock, "{");
+   socket_vector_int32(sock, n_t, "ini_nodes", tensors->ini_nodes);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_s, "ini_symbols", tensors->ini_symbols);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_c, "ini_clauses", tensors->ini_clauses);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_t, "node_inputs_1/lens", tensors->node_inputs_1_lens);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_i1, "node_inputs_1/symbols", tensors->node_inputs_1_symbols);
+   socket_str(sock, ",");
+   socket_vector_float(sock, n_i1, "node_inputs_1/sgn", tensors->node_inputs_1_sgn);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_t, "node_inputs_2/lens", tensors->node_inputs_2_lens);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_i2, "node_inputs_2/symbols", tensors->node_inputs_2_symbols);
+   socket_str(sock, ",");
+   socket_vector_float(sock, n_i2, "node_inputs_2/sgn", tensors->node_inputs_2_sgn);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_t, "node_inputs_3/lens", tensors->node_inputs_3_lens);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_i3, "node_inputs_3/symbols", tensors->node_inputs_3_symbols);
+   socket_str(sock, ",");
+   socket_vector_float(sock, n_i3, "node_inputs_3/sgn", tensors->node_inputs_3_sgn);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_s, "symbol_inputs/lens", tensors->symbol_inputs_lens);
+   socket_str(sock, ",");
+   socket_vector_float(sock, n_is, "symbol_inputs/sgn", tensors->symbol_inputs_sgn);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_t, "node_c_inputs/lens", tensors->node_c_inputs_lens);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_ce, "node_c_inputs/data", tensors->node_c_inputs_data);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_c, "clause_inputs/lens", tensors->clause_inputs_lens);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, n_ce, "clause_inputs/data", tensors->clause_inputs_data);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, 1, "prob_segments/lens", tensors->prob_segments_lens);
+   socket_str(sock, ",");
+   socket_vector_int32(sock, 1+n_q, "prob_segments/data", tensors->prob_segments_data);
+   socket_str(sock, ",");
+   //socket_vector_int32(sock, n_q, "labels", tensors->labels);
+   socket_matrix(sock, n_i1, 2, "node_inputs_1/nodes", tensors->node_inputs_1_nodes);
+   socket_str(sock, ",");
+   socket_matrix(sock, n_i2, 2, "node_inputs_2/nodes", tensors->node_inputs_2_nodes);
+   socket_str(sock, ",");
+   socket_matrix(sock, n_i3, 2, "node_inputs_3/nodes", tensors->node_inputs_3_nodes);
+   socket_str(sock, ",");
+   socket_matrix(sock, n_is, 3, "symbol_inputs/nodes", tensors->symbol_inputs_nodes);
+   socket_str(sock, "}");
+   socket_finish(sock);
+}
+
 
 /*---------------------------------------------------------------------*/
 /*                        End of File                                  */
