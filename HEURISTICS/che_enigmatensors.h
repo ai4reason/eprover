@@ -34,15 +34,20 @@ Changes
 /*---------------------------------------------------------------------*/
 
 #define ETF_TENSOR_SIZE (10*1024*1024)
-#define DEBUG_ETF
 #define SOCKET_BUF_SIZE 1024
+
+//#define DEBUG_ETF
+#define DEBUG_ETF_SERVER
 
 typedef struct enigmasocketcell
 {
    int fd;
    int cur;
+   int bytes_cnt;
    struct sockaddr_in addr;
    char buf[SOCKET_BUF_SIZE+128];
+   int evals_size;
+   char* evals;
 } EnigmaSocketCell, *EnigmaSocket_p;
 
 typedef struct enigmatensorsparamcell
@@ -137,6 +142,8 @@ void EnigmaTensorsFill(EnigmaTensors_p data);
 void EnigmaTensorsDump(FILE* out, EnigmaTensors_p tensors);
 
 void EnigmaSocketSend(EnigmaSocket_p sock, EnigmaTensors_p tensors);
+
+float* EnigmaSocketRecv(EnigmaSocket_p sock, int expected);
 
 #endif
 

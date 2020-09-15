@@ -41,7 +41,8 @@ typedef struct enigmaweighttfparamcell
    //TB_p         tmp_bank;
    //long         tmp_bank_vars;
 
-   char* model_dirname;
+   char* server_ip;
+   uint16_t server_port;
    long binary_weights;
    long context_size;
    double len_mult;
@@ -51,38 +52,7 @@ typedef struct enigmaweighttfparamcell
    void   (*init_fun)(struct enigmaweighttfparamcell*);
 
    EnigmaTensors_p tensors;
-
-   // clause edges
-   NumTree_p terms;
-   NumTree_p syms;
-   long fresh_t;
-   long fresh_s;
-   long fresh_c;
-   long maxvar;
-   PStack_p tedges;
-   PStack_p cedges;
-
-   // context
-   long context_cnt;
-
-   // conjecture edges
-   bool conj_mode;
-   NumTree_p conj_terms;
-   NumTree_p conj_syms;
-   long conj_fresh_t;
-   long conj_fresh_s;
-   long conj_fresh_c;
-   long conj_maxvar;
-   PStack_p conj_tedges;
-   PStack_p conj_cedges;
-
-   int n_is;
-   int n_i1;
-   int n_i2;
-   int n_i3;
-
-   // socket data
-   EnigmaSocket_p sock;
+   EnigmaSocket_p sock; // socket data
 
 }EnigmaWeightTfParamCell, *EnigmaWeightTfParam_p;
 
@@ -108,7 +78,8 @@ WFCB_p EnigmaWeightTfInit(
    ClausePrioFun prio_fun, 
    OCB_p ocb,
    ProofState_p proofstate,
-   char* model_dirname,
+   char* server_ip,
+   int server_port,
    long binary_weights,
    long context_size,
    double len_mult);

@@ -48,7 +48,7 @@ static void debug_symbols(EnigmaWeightTfParam_p data)
    
    fprintf(GlobalOut, "#TF# Symbols map:\n");
    fprintf(GlobalOut, "#TF# (conjecture):\n");
-   stack = NumTreeTraverseInit(data->conj_syms);
+   stack = NumTreeTraverseInit(data->tensors->conj_syms);
    while ((node = NumTreeTraverseNext(stack)))
    {
       fprintf(GlobalOut, "#TF#   s%ld: %s\n", node->val1.i_val, node->key ? 
@@ -57,7 +57,7 @@ static void debug_symbols(EnigmaWeightTfParam_p data)
    NumTreeTraverseExit(stack);
    
    fprintf(GlobalOut, "#TF# (clauses):\n");
-   stack = NumTreeTraverseInit(data->syms);
+   stack = NumTreeTraverseInit(data->tensors->syms);
    while ((node = NumTreeTraverseNext(stack)))
    {
       fprintf(GlobalOut, "#TF#   s%ld: %s\n", node->val1.i_val, node->key ? 
@@ -73,7 +73,7 @@ static void debug_terms(EnigmaWeightTfParam_p data)
    
    fprintf(GlobalOut, "#TF# Terms map:\n");
    fprintf(GlobalOut, "#TF# (conjecture)\n");
-   stack = NumTreeTraverseInit(data->conj_terms);
+   stack = NumTreeTraverseInit(data->tensors->conj_terms);
    while ((node = NumTreeTraverseNext(stack)))
    {
       fprintf(GlobalOut, "#TF#   t%ld: %s", node->val1.i_val, (node->key % 2 == 1) ? "~" : "");
@@ -83,7 +83,7 @@ static void debug_terms(EnigmaWeightTfParam_p data)
    NumTreeTraverseExit(stack);
    
    fprintf(GlobalOut, "#TF# (clauses)\n");
-   stack = NumTreeTraverseInit(data->terms);
+   stack = NumTreeTraverseInit(data->tensors->terms);
    while ((node = NumTreeTraverseNext(stack)))
    {
       fprintf(GlobalOut, "#TF#   t%ld: %s", node->val1.i_val, (node->key % 2 == 1) ? "~" : "");
@@ -99,34 +99,34 @@ static void debug_edges(EnigmaWeightTfParam_p data)
    
    fprintf(GlobalOut, "#TF# Clause edges:\n");
    fprintf(GlobalOut, "#TF# (conjecture)\n");
-   for (i=0; i<data->conj_cedges->current; i++)
+   for (i=0; i<data->tensors->conj_cedges->current; i++)
    { 
-      PDArray_p edge = PStackElementP(data->conj_cedges, i);
+      PDArray_p edge = PStackElementP(data->tensors->conj_cedges, i);
       fprintf(GlobalOut, "#TF#   (c%ld, t%ld)\n", 
          PDArrayElementInt(edge, 0), PDArrayElementInt(edge, 1));
    }
    fprintf(GlobalOut, "#TF# (clauses)\n");
-   for (i=0; i<data->cedges->current; i++)
+   for (i=0; i<data->tensors->cedges->current; i++)
    { 
-      PDArray_p edge = PStackElementP(data->cedges, i);
+      PDArray_p edge = PStackElementP(data->tensors->cedges, i);
       fprintf(GlobalOut, "#TF#   (c%ld, t%ld)\n", 
          PDArrayElementInt(edge, 0), PDArrayElementInt(edge, 1));
    }
 
    fprintf(GlobalOut, "#TF# Term edges:\n");
    fprintf(GlobalOut, "#TF# (conjecture)\n");
-   for (i=0; i<data->conj_tedges->current; i++)
+   for (i=0; i<data->tensors->conj_tedges->current; i++)
    { 
-      PDArray_p edge = PStackElementP(data->conj_tedges, i);
+      PDArray_p edge = PStackElementP(data->tensors->conj_tedges, i);
       fprintf(GlobalOut, "#TF#   (t%ld, t%ld, t%ld, s%ld, %ld)\n", 
          PDArrayElementInt(edge, 0), PDArrayElementInt(edge, 1),
          PDArrayElementInt(edge, 2), PDArrayElementInt(edge, 3),
          PDArrayElementInt(edge, 4));
    }
    fprintf(GlobalOut, "#TF# (clauses)\n");
-   for (i=0; i<data->tedges->current; i++)
+   for (i=0; i<data->tensors->tedges->current; i++)
    { 
-      PDArray_p edge = PStackElementP(data->tedges, i);
+      PDArray_p edge = PStackElementP(data->tensors->tedges, i);
       fprintf(GlobalOut, "#TF#   (t%ld, t%ld, t%ld, s%ld, %ld)\n", 
          PDArrayElementInt(edge, 0), PDArrayElementInt(edge, 1),
          PDArrayElementInt(edge, 2), PDArrayElementInt(edge, 3),
@@ -186,7 +186,7 @@ static void extweight_init(EnigmaWeightTfParam_p data)
    //fprintf(GlobalOut, "# ENIGMA: TensorFlow C library version %s\n", TF_Version());
    // process conjectures
    data->tensors->tmp_bank = TBAlloc(data->proofstate->signature);
-   data->conj_mode = true;
+   data->tensors->conj_mode = true;
    anchor = data->proofstate->axioms->anchor;
    for (clause=anchor->succ; clause!=anchor; clause=clause->succ)
    {
@@ -195,31 +195,28 @@ static void extweight_init(EnigmaWeightTfParam_p data)
          EnigmaTensorsUpdateClause(clause, data->tensors);
       }
    }
-   data->conj_mode = false;
-   data->conj_maxvar = data->maxvar; // save maxvar to restore
+   data->tensors->conj_mode = false;
+   data->tensors->conj_maxvar = data->tensors->maxvar; // save maxvar to restore
    EnigmaTensorsReset(data->tensors);
-
-   char* etf_ip = "127.0.0.1";
-   uint16_t etf_port = 8888;
 
    data->sock->fd = socket(AF_INET , SOCK_STREAM , 0);
 	if (data->sock->fd == -1)
 	{
-      perror(NULL);
+      perror("eprover: ENIGMA");
 		Error("ENIGMA: Can not create socket to connect to TF server!", OTHER_ERROR);
 	}
 
 	data->sock->addr.sin_family = AF_INET;
-   data->sock->addr.sin_addr.s_addr = inet_addr(etf_ip);
-	data->sock->addr.sin_port = htons(etf_port);
+   data->sock->addr.sin_addr.s_addr = inet_addr(data->server_ip);
+	data->sock->addr.sin_port = htons(data->server_port);
 
    if (connect(data->sock->fd, (struct sockaddr*)&(data->sock->addr), sizeof(data->sock->addr)) < 0)
    {
-      perror(NULL);
-      Error("ENIGMA: Error connecting to the TF server '%s:%d'.", OTHER_ERROR, etf_ip, etf_port);
+      perror("eprover: ENIGMA");
+      Error("ENIGMA: Error connecting to the TF server '%s:%d'.", OTHER_ERROR, data->server_ip, data->server_port);
    }
 
-   fprintf(GlobalOut, "ENIGMA: Connected to the TF server '%s:%d'.\n", etf_ip, etf_port);
+   fprintf(GlobalOut, "# ENIGMA: Connected to the TF server '%s:%d'.\n", data->server_ip, data->server_port);
 
    data->inited = true;
 }
@@ -236,29 +233,7 @@ EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void)
    EnigmaWeightTfParam_p res = EnigmaWeightTfParamCellAlloc();
 
    res->inited = false;
-
-   res->terms = NULL;
-   res->syms = NULL;
-   res->fresh_t = 0;
-   res->fresh_s = 0;
-   res->fresh_c = 0;
-   res->tedges = PStackAlloc();
-   res->cedges = PStackAlloc();
-
-   res->context_cnt = 0;
-   
-   res->conj_mode = false;
-   res->conj_terms = NULL;
-   res->conj_syms = NULL;
-   res->conj_fresh_t = 0;
-   res->conj_fresh_s = 0;
-   res->conj_fresh_c = 0;
-   res->conj_tedges = PStackAlloc();
-   res->conj_cedges = PStackAlloc();
-
-   res->maxvar = 0;
    res->tensors = EnigmaTensorsAlloc();
-
    res->sock = EnigmaSocketAlloc();
 
    return res;
@@ -266,13 +241,14 @@ EnigmaWeightTfParam_p EnigmaWeightTfParamAlloc(void)
 
 void EnigmaWeightTfParamFree(EnigmaWeightTfParam_p junk)
 {
-   free(junk->model_dirname);
+   SizeFree(junk->server_ip, strlen(junk->server_ip)+1);
    
-   if (!junk->inited)
+   if (!junk->inited) // FIXME: free even when not inited!
    {
       return;
    }
 
+   close(junk->sock->fd);
    EnigmaSocketFree(junk->sock);
    EnigmaTensorsFree(junk->tensors);
    junk->tensors = NULL;
@@ -291,7 +267,9 @@ WFCB_p EnigmaWeightTfParse(
    AcceptInpTok(in, OpenBracket);
    prio_fun = ParsePrioFun(in);
    AcceptInpTok(in, Comma);
-   char* d_model = ParseFilename(in);
+   char* server_ip = ParseDottedId(in);
+   AcceptInpTok(in, Comma);
+   long server_port = ParseInt(in);
    AcceptInpTok(in, Comma);
    long binary_weights = ParseInt(in);
    AcceptInpTok(in, Comma);
@@ -304,7 +282,8 @@ WFCB_p EnigmaWeightTfParse(
       prio_fun, 
       ocb,
       state,
-      d_model,
+      server_ip,
+      server_port,
       binary_weights,
       context_size,
       len_mult);
@@ -314,7 +293,8 @@ WFCB_p EnigmaWeightTfInit(
    ClausePrioFun prio_fun, 
    OCB_p ocb,
    ProofState_p proofstate,
-   char* model_dirname,
+   char* server_ip,
+   int server_port,
    long binary_weights,
    long context_size,
    double len_mult)
@@ -325,10 +305,11 @@ WFCB_p EnigmaWeightTfInit(
    data->ocb        = ocb;
    data->proofstate = proofstate;
    
-   data->model_dirname = model_dirname;
    data->binary_weights = binary_weights;
    data->context_size = context_size;
    data->len_mult = len_mult;
+   data->server_ip = server_ip;
+   data->server_port = server_port;
 
    saved_local = data;
    
@@ -364,7 +345,7 @@ double EnigmaWeightTfCompute(void* data, Clause_p clause)
 
    weight += (local->len_mult * length);
 
-#ifdef DEBUG_ETF
+#if defined(DEBUG_ETF) || defined(DEBUG_ETF_SERVER)
    fprintf(GlobalOut, "#TF#EVAL# %+.5f(%.1f)= ", weight, clause->tf_weight);
    ClausePrint(GlobalOut, clause, true);
    fprintf(GlobalOut, "\n");
@@ -393,24 +374,16 @@ void EnigmaComputeEvals(ClauseSet_p set, EnigmaWeightTfParam_p local)
    debug_terms(local);
    debug_edges(local);
 #endif
-
-   // TODO SERVER: call server evaluation here
+   
    EnigmaTensorsFill(local->tensors);
    EnigmaSocketSend(local->sock, local->tensors);
-  
-
-   uint32_t size;
    int n_q = local->tensors->fresh_c - local->tensors->conj_fresh_c + local->tensors->context_cnt;
-   recv(local->sock->fd, &size, 4, 0);
-   fprintf(GlobalOut, "Size: %d %d %ld\n", size, n_q, set->members);
-
-   //int idx = local->context_cnt;
-   float val;
+   float* evals = EnigmaSocketRecv(local->sock, n_q);
+  
+   int idx = local->tensors->context_cnt;
    for (Clause_p handle=set->anchor->succ; handle!=set->anchor; handle=handle->succ)
    {
-      recv(local->sock->fd, &val, 4, 0);
-      fprintf(GlobalOut, "%f\n", val);
-      handle->tf_weight = val; // logits[idx++];
+      handle->tf_weight = evals[idx++];
    }
 
    EnigmaTensorsReset(local->tensors);
@@ -423,24 +396,24 @@ void EnigmaContextAdd(Clause_p clause, EnigmaWeightTfParam_p local)
       if (!saved_local) { return; }
       local = saved_local;
    }
-   if (local->context_cnt >= local->context_size)
+   if (local->tensors->context_cnt >= local->context_size)
    {
       return;
    }
    local->init_fun(local);
 
    EnigmaTensorsReset(local->tensors);
-   local->conj_mode = true;
+   local->tensors->conj_mode = true;
    EnigmaTensorsUpdateClause(clause, local->tensors);
-   local->conj_mode = false;
-   local->conj_maxvar = local->maxvar; // save maxvar to restore
+   local->tensors->conj_mode = false;
+   local->tensors->conj_maxvar = local->tensors->maxvar; // save maxvar to restore
    EnigmaTensorsReset(local->tensors);
 #ifdef DEBUG_ETF
-   fprintf(GlobalOut, "#TF# Context clause %ld added: ", local->context_cnt);
+   fprintf(GlobalOut, "#TF# Context clause %ld added: ", local->tensors->context_cnt);
    ClausePrint(GlobalOut, clause, true);
    fprintf(GlobalOut, "\n");
 #endif
-   local->context_cnt++;
+   local->tensors->context_cnt++;
 }
 
 

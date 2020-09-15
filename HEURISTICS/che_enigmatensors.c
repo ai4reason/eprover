@@ -578,11 +578,18 @@ EnigmaSocket_p EnigmaSocketAlloc(void)
    EnigmaSocket_p sock = EnigmaSocketCellAlloc();
    sock->cur = 0;
    sock->fd = 0;
+   sock->evals = NULL;
+   sock->evals_size = 0;
+   sock->bytes_cnt = 0;
    return sock;
 }
 
 void EnigmaSocketFree(EnigmaSocket_p junk)
 {
+   if (junk->evals)
+   {
+      SizeFree(junk->evals, junk->evals_size);
+   }
    EnigmaSocketCellFree(junk);
 }
 
@@ -773,24 +780,30 @@ void EnigmaTensorsFill(EnigmaTensors_p data)
       data->prob_segments_data, data);
 }
 
-void socket_flush(EnigmaSocket_p sock)
+static void socket_flush(EnigmaSocket_p sock)
 {
-   int ret =  send(sock->fd, sock->buf, sock->cur, 0);
+   int ret =  send(sock->fd, sock->buf, sock->cur, MSG_NOSIGNAL);
    if (ret < 0)
    {
-      Error("Sending data to Tensorflow server via a socket failed (%d).", OTHER_ERROR, ret);
+      perror("eprover: ENIGMA");
+      Error("ENIGMA: Sending data to Tensorflow server via a socket failed (%d).", OTHER_ERROR, ret);
    }
+   sock->bytes_cnt += sock->cur;
    sock->cur = 0;
 }
 
-void socket_finish(EnigmaSocket_p sock)
+static void socket_finish(EnigmaSocket_p sock)
 {
    sock->buf[sock->cur] = '\0';
    sock->cur++;
    socket_flush(sock);
+#ifdef DEBUG_ETF_SERVER
+   fprintf(GlobalOut, "#TF#SERVER: Sent %d bytes to the TF server.\n", sock->bytes_cnt);
+#endif
+   sock->bytes_cnt = 0;
 }
 
-void socket_str(EnigmaSocket_p sock, char* str)
+static void socket_str(EnigmaSocket_p sock, char* str)
 {
    // NOTE: make sure the string is not longer than the buffer size!
    int len = strlen(str);
@@ -802,7 +815,7 @@ void socket_str(EnigmaSocket_p sock, char* str)
    sock->cur += len;
 }
 
-void socket_vector_int32(EnigmaSocket_p sock, int size, char* id, int32_t* values)
+static void socket_vector_int32(EnigmaSocket_p sock, int size, char* id, int32_t* values)
 {
    char str[128];
    socket_str(sock, "\"");
@@ -816,7 +829,7 @@ void socket_vector_int32(EnigmaSocket_p sock, int size, char* id, int32_t* value
    socket_str(sock, "]");
 }
 
-void socket_vector_float(EnigmaSocket_p sock, int size, char* id, float* values)
+static void socket_vector_float(EnigmaSocket_p sock, int size, char* id, float* values)
 {
    char str[128];
    socket_str(sock, "\"");
@@ -830,12 +843,12 @@ void socket_vector_float(EnigmaSocket_p sock, int size, char* id, float* values)
    socket_str(sock, "]");
 }
 
-void socket_matrix(EnigmaSocket_p sock, int dimx, int dimy, char* id, int32_t* values)
+static void socket_matrix(EnigmaSocket_p sock, int dimx, int dimy, char* id, int32_t* values)
 {
    socket_vector_int32(sock, dimx*dimy, id, values);
 }
 
-void dump_vector_int32(FILE* out, int size, char* id, int32_t* values)
+static void dump_vector_int32(FILE* out, int size, char* id, int32_t* values)
 {
    fprintf(out, "   \"%s\": [", id);
    for (int i=0; i<size; i++)
@@ -845,7 +858,7 @@ void dump_vector_int32(FILE* out, int size, char* id, int32_t* values)
    fprintf(out, "],\n");
 }
 
-void dump_vector_float(FILE* out, int size, char* id, float* values)
+static void dump_vector_float(FILE* out, int size, char* id, float* values)
 {
    fprintf(out, "   \"%s\": [", id);
    for (int i=0; i<size; i++)
@@ -855,7 +868,7 @@ void dump_vector_float(FILE* out, int size, char* id, float* values)
    fprintf(out, "],\n");
 }
 
-void dump_matrix(FILE* out, int dimx, int dimy, char* id, int32_t* values)
+static void dump_matrix(FILE* out, int dimx, int dimy, char* id, int32_t* values)
 {
    fprintf(out, "   \"%s\": [", id);
    int size = dimx*dimy;
@@ -919,6 +932,11 @@ void EnigmaSocketSend(EnigmaSocket_p sock, EnigmaTensors_p tensors)
    int n_i2 = tensors->n_i2;
    int n_i3 = tensors->n_i3;
 
+#ifdef DEBUG_ETF_SERVER
+   fprintf(GlobalOut, "#TF#SERVER: Sending data to the TF server (conj=%d, context=%ld, query=%ld, total=%d).\n",
+            n_c - n_q, tensors->context_cnt, n_q - tensors->context_cnt, n_c);
+#endif
+
    socket_str(sock, "{");
    socket_vector_int32(sock, n_t, "ini_nodes", tensors->ini_nodes);
    socket_str(sock, ",");
@@ -972,6 +990,48 @@ void EnigmaSocketSend(EnigmaSocket_p sock, EnigmaTensors_p tensors)
    socket_finish(sock);
 }
 
+float* EnigmaSocketRecv(EnigmaSocket_p sock, int expected)
+{
+   uint32_t* received;
+   int done = 0;
+   int bytes = 4 + 4*expected;
+
+#ifdef DEBUG_ETF_SERVER
+   fprintf(GlobalOut, "#TF#SERVER: Receiving data from the TF server (%d bytes expected).\n", bytes);
+#endif
+
+   // ensure enough memory is allocated  
+   if (sock->evals == NULL)
+   {
+      sock->evals_size = MAX(bytes, 4096);
+      sock->evals = SecureMalloc(sock->evals_size);
+   }
+   else if (sock->evals_size < bytes)
+   {
+      sock->evals_size = bytes;
+      sock->evals = SecureRealloc(sock->evals, sock->evals_size);
+   }
+
+   // receive the data
+   while (done < bytes)
+   {
+      done += recv(sock->fd, &sock->evals[done], bytes, 0);
+   }
+
+   // check sizes
+   received = (uint32_t*)sock->evals;
+   if (*received != expected)
+   {
+      Error("Enigma: Wrong TF server response size (expected: %d; received: %d).", OTHER_ERROR, expected, *received);
+   }
+
+#ifdef DEBUG_ETF_SERVER
+   fprintf(GlobalOut, "#TF#SERVER: Received %d bytes from the TF server.\n", done);
+#endif
+
+   // return data
+   return (float*)(&sock->evals[4]);
+}
 
 /*---------------------------------------------------------------------*/
 /*                        End of File                                  */
